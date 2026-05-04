@@ -1,8 +1,1739 @@
 <!DOCTYPE html>
-<html>
-<head><title>TEKAWORD • MY Edu Hub</title></head>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="description" content="TEKAWORD – Bilingual 5-letter word game by MY Edu Hub">
+<meta property="og:title"       content="TEKAWORD • MY Edu Hub">
+<meta property="og:description" content="Guess the 5-letter word in 6 tries! English & Malay.">
+<meta name="theme-color" content="#1B2B6B">
+<title>TEKAWORD • MY Edu Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ── kid.css variables ──────────────────────────────────── */
+:root{
+  --bg-grad:     linear-gradient(150deg,#0D1B4B,#1B2B6B,#243580);
+  --bg-card:     rgba(255,255,255,.97);
+  --bg-solid:    #ffffff;
+  --bg-chip:     #f0f2ff;
+  --bg-topbar:   rgba(13,27,75,.93);
+  --txt:         #1B2B6B;
+  --txt2:        #555;
+  --txt-m:       #888;
+  --txt-dk:      #fff;
+  --gold:        #C9963A;
+  --gold-b:      #E8B84B;
+  --border:      #e0e0e0;
+  --sh-card:     0 20px 40px rgba(0,0,0,.2);
+  --sh-sm:       0 4px 14px rgba(0,0,0,.1);
+  --sh-top:      0 2px 12px rgba(0,0,0,.25);
+  --ok:          #28a745;
+  --err:         #e74c3c;
+  --corr:        #1565C0; --corr-d:#0D47A1;   /* 🟦 blue  */
+  --pres:        #E65100; --pres-d:#BF360C;   /* 🟧 orange */
+  --abs:         #37474F; --abs-d: #263238;   /* ⬛ dark   */
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;
+  user-select:none;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Segoe UI',Roboto,sans-serif;background:var(--bg-grad);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+button{font-family:inherit;cursor:pointer;}
+
+/* ── TOPBAR ─────────────────────────────────────────────── */
+.topbar{position:sticky;top:0;z-index:100;width:100%;
+  background:var(--bg-topbar);backdrop-filter:blur(12px);
+  padding:8px 16px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,.1);box-shadow:var(--sh-top);min-height:56px;}
+.tb-left{display:flex;align-items:center;gap:10px;}
+.tb-cap{font-size:2rem;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));flex-shrink:0;}
+.tb-brand{font-family:'Poppins',sans-serif;font-weight:800;
+  font-size:.92rem;color:var(--txt-dk);line-height:1.2;}
+.tb-tag{display:block;font-size:.54rem;font-weight:600;
+  color:var(--gold-b);letter-spacing:.5px;font-style:italic;margin-top:1px;}
+.tb-right{display:flex;align-items:center;gap:6px;}
+.tb-btn{background:rgba(255,255,255,.12);border:none;border-radius:50%;
+  width:34px;height:34px;font-size:1rem;color:white;
+  display:flex;align-items:center;justify-content:center;transition:background .2s;}
+.tb-btn:hover{background:rgba(255,255,255,.24);}
+
+/* ── TOAST ──────────────────────────────────────────────── */
+.toast-wrap{position:fixed;top:62px;left:50%;transform:translateX(-50%);
+  z-index:500;display:flex;flex-direction:column;
+  align-items:center;gap:6px;pointer-events:none;width:340px;}
+.twt{background:#1B2B6B;color:white;padding:9px 20px;border-radius:22px;
+  font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:800;
+  text-align:center;max-width:100%;animation:twIn .18s ease forwards;box-shadow:var(--sh-sm);}
+.twt.err{background:var(--err);}
+.twt.ok {background:var(--ok);}
+@keyframes twIn {from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes twOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-8px)}}
+
+/* ── GAME WRAP ──────────────────────────────────────────── */
+.game-wrap{width:100%;max-width:480px;padding:14px 16px 28px;
+  display:flex;flex-direction:column;align-items:center;gap:11px;}
+
+/* ── TITLE ──────────────────────────────────────────────── */
+.g-title{text-align:center;}
+.g-title h1{font-family:'Poppins',sans-serif;font-weight:900;
+  font-size:2.8rem;letter-spacing:5px;line-height:1;color:white;
+  text-shadow:0 2px 12px rgba(0,0,0,.3),0 0 28px rgba(232,184,75,.22);}
+.g-title .sub{font-size:.72rem;color:rgba(255,255,255,.65);margin-top:3px;}
+
+/* ── MINI STATS ─────────────────────────────────────────── */
+.stats-bar{display:flex;background:var(--bg-card);border-radius:16px;
+  padding:10px 6px;box-shadow:var(--sh-sm);width:100%;}
+.stat{flex:1;text-align:center;}
+.stat+.stat{border-left:1px solid var(--border);}
+.stat-val{font-family:'Poppins',sans-serif;font-weight:900;
+  font-size:1.5rem;color:var(--txt);line-height:1;}
+.stat-lbl{font-size:.58rem;font-weight:700;color:var(--txt-m);
+  text-transform:uppercase;letter-spacing:.6px;margin-top:2px;}
+
+/* ── LANG TOGGLE ────────────────────────────────────────── */
+.lang-toggle{display:flex;background:rgba(255,255,255,.13);backdrop-filter:blur(6px);
+  border-radius:50px;padding:4px;gap:4px;border:1px solid rgba(255,255,255,.2);}
+.lang-btn{background:transparent;border:none;padding:7px 20px;border-radius:44px;
+  font-family:'Nunito',sans-serif;font-size:.83rem;font-weight:800;
+  color:rgba(255,255,255,.7);transition:all .2s;}
+.lang-btn.active{background:linear-gradient(135deg,var(--gold),var(--gold-b));
+  color:white;box-shadow:0 2px 8px rgba(201,150,58,.4);}
+
+/* ── MODE TOGGLE ────────────────────────────────────────── */
+.mode-toggle{
+  display:flex;background:rgba(255,255,255,.13);backdrop-filter:blur(6px);
+  border-radius:50px;padding:4px;gap:4px;border:1px solid rgba(255,255,255,.2);
+}
+.mode-btn{
+  background:transparent;border:none;padding:7px 20px;border-radius:44px;
+  font-family:'Nunito',sans-serif;font-size:.83rem;font-weight:800;
+  color:rgba(255,255,255,.7);transition:all .2s;cursor:pointer;
+}
+.mode-btn.active{
+  background:linear-gradient(135deg,#1565C0,#0D47A1);
+  color:white;box-shadow:0 2px 8px rgba(21,101,192,.5);
+}
+.mode-btn.active.practice{
+  background:linear-gradient(135deg,#28a745,#1e7e34);
+  box-shadow:0 2px 8px rgba(40,167,69,.5);
+}
+.grid{display:flex;flex-direction:column;gap:6px;perspective:600px;}
+.row {display:flex;gap:6px;justify-content:center;}
+.tile{width:58px;height:58px;background:rgba(255,255,255,.85);
+  border:2px solid rgba(255,255,255,.3);border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Poppins',sans-serif;font-weight:900;
+  font-size:1.9rem;color:var(--txt);box-shadow:0 2px 8px rgba(0,0,0,.12);}
+.tile.filled {background:#fff;border-color:var(--txt);animation:tilePop .12s ease;}
+.tile.correct{background:var(--corr);border-color:var(--corr);color:white;}
+.tile.present{background:var(--pres);border-color:var(--pres);color:white;}
+.tile.absent {background:var(--abs); border-color:var(--abs); color:white;}
+
+/* ── ANIMATIONS ─────────────────────────────────────────── */
+@keyframes tilePop{0%{transform:scale(.9)}70%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes rowShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}
+  40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+@keyframes tileB{0%,100%{transform:translateY(0) scale(1)}45%{transform:translateY(-18px) scale(1.06)}}
+@keyframes popIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.row.shake  {animation:rowShake .38s ease;}
+.tile.bounce{animation:tileB .5s ease;}
+
+/* ── LEGEND ─────────────────────────────────────────────── */
+.legend{display:flex;gap:12px;font-size:.66rem;color:rgba(255,255,255,.78);
+  flex-wrap:wrap;justify-content:center;}
+.legend-item{display:flex;align-items:center;gap:5px;}
+.legend-dot {width:13px;height:13px;border-radius:3px;flex-shrink:0;}
+
+/* ── KEYBOARD ───────────────────────────────────────────── */
+.keyboard{display:flex;flex-direction:column;gap:6px;width:100%;}
+.key-row {display:flex;justify-content:center;gap:5px;}
+.key{
+  background:var(--bg-card);border:1.5px solid var(--border);color:var(--txt);
+  font-family:'Nunito',sans-serif;font-weight:900;font-size:.84rem;
+  height:46px;min-width:30px;flex:1;max-width:40px;
+  border-radius:10px;
+  text-transform:uppercase;transition:background .1s,transform .08s;
+  box-shadow:0 3px 0 rgba(0,0,0,.18);
+  display:flex;align-items:center;justify-content:center;
+  /* Touch-friendly: prevent text selection & callout on long-press */
+  -webkit-touch-callout:none;
+  touch-action:manipulation;
+  cursor:pointer;
+}
+.key:active  {transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.15);}
+.key.wide    {min-width:44px;max-width:54px;font-size:.72rem;flex:1.4;}
+.key.correct {background:var(--corr);border-color:var(--corr);color:white;box-shadow:0 3px 0 var(--corr-d);}
+.key.present {background:var(--pres);border-color:var(--pres);color:white;box-shadow:0 3px 0 var(--pres-d);}
+.key.absent  {background:var(--abs); border-color:var(--abs); color:white;box-shadow:0 3px 0 var(--abs-d);}
+
+/* ── MOBILE INPUT BAR ───────────────────────────────────── */
+/* Replaces ghost input — visible and 100% reliable on Android */
+/* ── BUTTONS ────────────────────────────────────────────── */
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-b));
+  color:white;border:none;padding:12px 22px;border-radius:28px;
+  font-family:'Nunito',sans-serif;font-weight:900;font-size:.88rem;
+  box-shadow:0 4px 0 #9a6a1f;transition:all .12s;}
+.btn-gold:active{transform:translateY(2px);box-shadow:0 2px 0 #9a6a1f;}
+.btn-gold:disabled{background:rgba(255,255,255,.18)!important;
+  box-shadow:0 4px 0 rgba(0,0,0,.15)!important;cursor:not-allowed;opacity:.9;}
+.btn-ghost{background:rgba(255,255,255,.15);color:white;
+  border:1.5px solid rgba(255,255,255,.25);padding:12px 18px;border-radius:28px;
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:.88rem;
+  backdrop-filter:blur(4px);transition:all .12s;}
+.btn-ghost:hover {background:rgba(255,255,255,.25);}
+.btn-ghost:active{transform:translateY(2px);}
+.btn-share{background:linear-gradient(135deg,#1B2B6B,#243580);
+  color:white;border:none;padding:12px 22px;border-radius:28px;
+  font-family:'Nunito',sans-serif;font-weight:900;font-size:.88rem;
+  box-shadow:0 4px 0 #0a1535;transition:all .12s;animation:slideUp .35s ease;}
+.btn-share:active{transform:translateY(2px);box-shadow:0 2px 0 #0a1535;}
+
+#shareRow{display:none;width:100%;justify-content:center;}
+#shareRow.show{display:flex;}
+
+/* ── COOLDOWN BANNER ────────────────────────────────────── */
+.cd-banner{display:none;width:100%;background:rgba(255,255,255,.1);
+  backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);
+  border-radius:20px;padding:14px 20px;text-align:center;animation:slideUp .35s ease;}
+.cd-banner.show{display:block;}
+.cd-emoji{font-size:1.8rem;margin-bottom:4px;}
+.cd-title{font-family:'Poppins',sans-serif;font-weight:800;font-size:.95rem;
+  color:white;margin-bottom:2px;}
+.cd-timer{font-family:'Poppins',sans-serif;font-weight:900;font-size:2.4rem;
+  color:var(--gold-b);letter-spacing:2px;line-height:1;margin:4px 0;}
+.cd-sub{font-size:.68rem;color:rgba(255,255,255,.6);font-style:italic;}
+
+/* ── SPINNER ────────────────────────────────────────────── */
+.spin{display:inline-block;width:12px;height:12px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.35);border-top-color:white;
+  animation:sp .8s linear infinite;vertical-align:middle;margin-left:5px;}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── FOOTER ─────────────────────────────────────────────── */
+.footer{font-size:.62rem;color:rgba(255,255,255,.38);text-align:center;line-height:1.7;}
+
+/* ══ MODALS ═══════════════════════════════════════════════ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);
+  backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;
+  z-index:2000;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--bg-solid);border-radius:28px;padding:0;
+  width:100%;max-width:420px;max-height:90vh;overflow-y:auto;
+  box-shadow:var(--sh-card);position:relative;
+  animation:popIn .25s cubic-bezier(.175,.885,.32,1.275);}
+.m-hdr{display:flex;align-items:center;justify-content:space-between;padding:22px 22px 0;}
+.m-title{font-family:'Poppins',sans-serif;font-weight:900;font-size:1.15rem;color:var(--txt);}
+.m-close{background:#f0f2ff;border:none;width:30px;height:30px;border-radius:50%;
+  font-size:.9rem;font-weight:900;color:var(--txt-m);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.m-close:hover{background:#e0e4ff;}
+.m-body{padding:18px 22px 24px;}
+.m-btn-row{display:flex;gap:10px;margin-top:18px;}
+.m-btn{flex:1;padding:13px;border:none;border-radius:18px;
+  font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:900;transition:all .12s;}
+.m-btn.primary{background:linear-gradient(135deg,#1B2B6B,#243580);color:white;}
+.m-btn.primary:hover{opacity:.88;}
+.m-btn.gold{background:linear-gradient(135deg,var(--gold),var(--gold-b));
+  color:white;box-shadow:0 3px 0 #9a6a1f;}
+.m-btn.gold:active{transform:translateY(2px);box-shadow:none;}
+
+/* ── HOW-TO ─────────────────────────────────────────────── */
+.how-desc{font-size:.82rem;color:#444;line-height:1.6;margin-bottom:12px;}
+.how-desc strong{font-weight:800;color:var(--txt);}
+.how-row {display:flex;gap:4px;margin:8px 0 5px;}
+.how-row .tile{width:40px;height:40px;font-size:1.1rem;border-radius:8px;flex-shrink:0;}
+.how-rule{display:flex;align-items:flex-start;gap:8px;margin-bottom:12px;}
+.how-rule-dot{width:13px;height:13px;border-radius:3px;flex-shrink:0;margin-top:3px;}
+.how-rule-text{font-size:.82rem;color:#444;line-height:1.5;}
+.how-rule-text b.g{color:var(--corr);font-weight:900;}   /* 🟦 blue  */
+.how-rule-text b.y{color:var(--pres);font-weight:900;}   /* 🟧 orange */
+.how-rule-text b.a{color:var(--abs); font-weight:900;}
+.how-div{border:none;border-top:1px solid var(--border);margin:14px 0;}
+
+/* ── STATS MODAL ────────────────────────────────────────── */
+.st-tabs{display:flex;background:var(--bg-chip);border-radius:12px;padding:4px;gap:4px;margin-bottom:16px;}
+.st-tab{flex:1;padding:7px 0;border:none;border-radius:9px;
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:.8rem;
+  color:var(--txt-m);background:transparent;transition:all .2s;}
+.st-tab.active{background:white;color:var(--txt);box-shadow:0 2px 6px rgba(0,0,0,.1);}
+.sm-stats{display:flex;background:var(--bg-chip);border-radius:16px;padding:14px 8px;margin-bottom:20px;}
+.sm-s{flex:1;text-align:center;}
+.sm-s+.sm-s{border-left:1px solid var(--border);}
+.sm-v{font-family:'Poppins',sans-serif;font-weight:900;font-size:2rem;color:var(--txt);line-height:1;}
+.sm-l{font-size:.6rem;font-weight:700;color:var(--txt-m);text-transform:uppercase;letter-spacing:.6px;margin-top:3px;}
+.dist-ttl{font-family:'Poppins',sans-serif;font-weight:800;font-size:.78rem;
+  color:var(--txt2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;}
+.dist-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.dist-n{width:16px;font-family:'Poppins',sans-serif;font-weight:900;
+  font-size:.85rem;color:var(--txt);text-align:right;flex-shrink:0;}
+.dist-track{flex:1;background:#eef0fb;border-radius:5px;height:28px;overflow:hidden;}
+.dist-bar{height:100%;background:var(--abs);border-radius:5px;
+  display:flex;align-items:center;justify-content:flex-end;
+  padding-right:7px;min-width:28px;transition:width .5s cubic-bezier(.25,.8,.25,1);}
+.dist-bar.bw {background:var(--corr);}
+.dist-bar.bc {background:var(--gold);}
+.dist-bar.bl {background:var(--err);}
+.dist-ct{font-family:'Poppins',sans-serif;font-weight:900;font-size:.76rem;color:white;}
+.no-game{text-align:center;padding:20px;font-size:.85rem;color:var(--txt-m);font-style:italic;}
+.lg-card{background:var(--bg-chip);border-radius:14px;padding:12px 16px;margin-top:16px;text-align:center;}
+.lg-lbl {font-size:.65rem;font-weight:800;color:var(--txt-m);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+.lg-res {font-family:'Poppins',sans-serif;font-weight:800;font-size:.95rem;}
+.lg-res.won {color:var(--ok);}
+.lg-res.lost{color:var(--err);}
+.lg-ans {font-family:'Poppins',sans-serif;font-weight:900;font-size:1.4rem;
+  letter-spacing:4px;color:var(--txt);margin-top:4px;}
+.emoji-prev{background:#f8f9ff;border:1.5px solid var(--border);border-radius:14px;
+  padding:12px 16px;margin-top:10px;font-family:'Courier New',monospace;
+  font-size:.82rem;color:var(--txt);line-height:1.7;white-space:pre;text-align:center;}
+
+/* ── NAME ENTRY MODAL ───────────────────────────────────── */
+.name-overlay{
+  position:fixed;inset:0;z-index:3000;
+  background:linear-gradient(150deg,rgba(13,27,75,.97),rgba(27,43,107,.97));
+  backdrop-filter:blur(16px);
+  /* Scrollable so button stays reachable when mobile keyboard appears */
+  overflow-y:auto;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:32px 24px 40px;
+}
+.name-overlay.hidden{display:none;}
+
+.name-card{
+  background:white;border-radius:32px;
+  width:100%;max-width:360px;
+  box-shadow:0 24px 60px rgba(0,0,0,.35);
+  animation:popIn .35s cubic-bezier(.175,.885,.32,1.275);
+  overflow:hidden;flex-shrink:0;
+}
+.name-hero{
+  background:linear-gradient(135deg,#1B2B6B,#243580);
+  padding:24px 24px 18px;text-align:center;
+}
+.name-cap{font-size:3rem;line-height:1;margin-bottom:6px;
+  filter:drop-shadow(0 3px 8px rgba(0,0,0,.3));display:block;}
+.name-brand{font-family:'Poppins',sans-serif;font-weight:900;font-size:1rem;
+  color:white;letter-spacing:.5px;}
+.name-tagline{font-family:'Nunito',sans-serif;font-size:.65rem;font-weight:600;
+  color:var(--gold-b);font-style:italic;margin-top:2px;letter-spacing:.4px;}
+
+.name-body{padding:22px 20px 24px;}
+.name-welcome{font-family:'Poppins',sans-serif;font-weight:900;font-size:1.3rem;
+  color:var(--txt);text-align:center;margin-bottom:4px;}
+.name-hint{font-size:.78rem;color:var(--txt-m);text-align:center;
+  margin-bottom:18px;line-height:1.5;}
+
+.name-input-wrap{position:relative;margin-bottom:8px;}
+.name-input{
+  width:100%;padding:13px 16px 13px 44px;
+  font-family:'Poppins',sans-serif;font-weight:700;font-size:1rem;
+  color:var(--txt);
+  background:#f8f9ff;border:2px solid var(--border);border-radius:14px;
+  outline:none;transition:border-color .2s,box-shadow .2s;
+  user-select:auto;-webkit-user-select:auto;
+}
+.name-input:focus{border-color:#93C5FD;box-shadow:0 0 0 3px rgba(147,197,253,.25);}
+.name-input::placeholder{color:#bbb;font-weight:600;}
+.name-input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  font-size:1.05rem;pointer-events:none;}
+.name-err{font-size:.72rem;color:var(--err);font-weight:700;
+  min-height:18px;margin-bottom:8px;text-align:center;display:block;}
+
+.name-btn{
+  width:100%;padding:14px;border:none;border-radius:16px;
+  background:linear-gradient(135deg,var(--gold),var(--gold-b));
+  color:white;font-family:'Poppins',sans-serif;font-weight:900;font-size:1rem;
+  box-shadow:0 4px 0 #9a6a1f;transition:all .12s;cursor:pointer;letter-spacing:.3px;
+  /* Explicit pointer-events in case anything overrides */
+  pointer-events:auto;
+}
+.name-btn:hover{opacity:.92;}
+.name-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #9a6a1f;}
+
+.name-footer{font-size:.6rem;color:var(--txt-m);text-align:center;margin-top:12px;}
+
+/* Player chip in topbar */
+.tb-player{
+  display:none;align-items:center;gap:5px;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);
+  border-radius:20px;padding:4px 10px 4px 6px;max-width:130px;overflow:hidden;
+  cursor:pointer;transition:background .2s;
+}
+.tb-player:hover{ background:rgba(255,255,255,.24); }
+.tb-player.show{display:flex;}
+.tb-avatar{width:22px;height:22px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),var(--gold-b));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;font-weight:900;color:white;flex-shrink:0;}
+.tb-pname{font-family:'Nunito',sans-serif;font-weight:800;font-size:.72rem;
+  color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tb-edit{font-size:.6rem;opacity:.6;margin-left:1px;flex-shrink:0;}
+
+/* ── SHARE MODAL ────────────────────────────────────────── */
+.share-preview-box{
+  background:#f8f9ff;border:1.5px solid var(--border);border-radius:16px;
+  padding:18px 16px;margin-bottom:4px;
+  font-family:'Courier New',Courier,monospace;font-size:.9rem;
+  color:var(--txt);line-height:2;white-space:pre;text-align:center;
+  letter-spacing:.3px;word-break:break-all;
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media(max-width:390px){
+  .tile{width:50px;height:50px;font-size:1.55rem;border-radius:9px;}
+  .key{height:46px;min-width:28px;font-size:.76rem;} .key.wide{min-width:46px;}
+  .g-title h1{font-size:2.4rem;} .tb-brand{font-size:.82rem;} .tb-tag{font-size:.5rem;}
+}
+@media(max-height:680px){
+  .game-wrap{gap:8px;} .tile{width:50px;height:50px;font-size:1.5rem;}
+  .g-title h1{font-size:2.3rem;}
+}
+</style>
+</head>
 <body>
-  <h1>🎓 TEKAWORD</h1>
-  <p>Coming soon...</p>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="tb-left">
+    <div class="tb-cap">🎓</div>
+    <div class="tb-brand">MY Edu Hub<span class="tb-tag">Where Learn Meet Success</span></div>
+  </div>
+  <div class="tb-right">
+    <!-- Player name chip — click to rename -->
+    <div class="tb-player" id="tbPlayer" title="Click to change name">
+      <div class="tb-avatar" id="tbAvatar">?</div>
+      <div class="tb-pname"  id="tbPname"></div>
+      <span class="tb-edit">✏️</span>
+    </div>
+    <button class="tb-btn" id="statsBtnH" title="Stats">📊</button>
+    <button class="tb-btn" id="helpBtnH"  title="Help">❓</button>
+  </div>
+</header>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- NAME ENTRY — shown once on first visit -->
+<div class="name-overlay" id="nameOverlay">
+  <div class="name-card">
+    <div class="name-hero">
+      <span class="name-cap">🎓</span>
+      <div class="name-brand">MY Edu Hub</div>
+      <div class="name-tagline">Where Learn Meet Success</div>
+    </div>
+    <div class="name-body">
+      <div class="name-welcome" id="nmWelcome">Welcome to TEKAWORD!</div>
+      <div class="name-hint"    id="nmHint">What's your name? It'll appear in your results.</div>
+      <div class="name-input-wrap">
+        <span class="name-input-icon">👤</span>
+        <input class="name-input" id="nameInput" type="text"
+               maxlength="20" autocomplete="off" autocorrect="off"
+               autocapitalize="words" spellcheck="false"
+               placeholder="e.g. Ahmad, Sarah…">
+      </div>
+      <span class="name-err" id="nameErr"></span>
+      <!-- onclick as direct backup in case addEventListener fails -->
+      <button class="name-btn" id="nameSubmit" onclick="submitName()">Let's Play! 🚀</button>
+      <div class="name-footer" id="nmFooter">Stored on your device only.</div>
+    </div>
+  </div>
+</div>
+
+<!-- RENAME MODAL — opened by clicking name chip -->
+<div class="modal-overlay" id="renameModal">
+  <div class="modal-box" style="max-width:340px;">
+    <div class="m-hdr">
+      <div class="m-title" id="renameTtl">✏️ Change Name</div>
+      <button class="m-close" id="renameX">✕</button>
+    </div>
+    <div class="m-body">
+      <div style="font-size:.8rem;color:var(--txt-m);margin-bottom:14px;" id="renameHint">Enter your new name.</div>
+      <div class="name-input-wrap">
+        <span class="name-input-icon">👤</span>
+        <input class="name-input" id="renameInput" type="text"
+               maxlength="20" autocomplete="off" autocorrect="off"
+               autocapitalize="words" spellcheck="false">
+      </div>
+      <span class="name-err" id="renameErr"></span>
+      <div class="m-btn-row" style="margin-top:12px;">
+        <button class="m-btn primary" id="renameSave" onclick="saveName()"></button>
+        <button class="m-btn" style="background:#f0f2ff;color:var(--txt);" id="renameCancel"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME -->
+<main class="game-wrap">
+  <div class="g-title">
+    <h1>TEKAWORD</h1>
+    <div class="sub" id="gameSub"></div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-val" id="sP">0</div><div class="stat-lbl" id="sPl"></div></div>
+    <div class="stat"><div class="stat-val" id="sW">0%</div><div class="stat-lbl" id="sWl"></div></div>
+    <div class="stat"><div class="stat-val" id="sSt">0</div><div class="stat-lbl" id="sStl"></div></div>
+    <div class="stat"><div class="stat-val" id="sBe">0</div><div class="stat-lbl" id="sBel"></div></div>
+  </div>
+
+  <div class="lang-toggle">
+    <button class="lang-btn active" id="btnEn">🇬🇧 English</button>
+    <button class="lang-btn"        id="btnMs">🇲🇾 Melayu</button>
+  </div>
+
+  <!-- Mode toggle -->
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btnChallenge"></button>
+    <button class="mode-btn"        id="btnPractice"></button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--corr)"></div><span id="legC"></span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--pres)"></div><span id="legP"></span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--abs)"></div> <span id="legA"></span></div>
+  </div>
+
+  <div class="keyboard" id="keyboard"></div>
+
+  <div class="btn-row">
+    <button class="btn-gold"  id="newGameBtn"></button>
+    <button class="btn-ghost" id="helpBtn"></button>
+  </div>
+
+  <!-- Cooldown banner — appears after game while timer active -->
+  <div class="cd-banner" id="cdBanner">
+    <div class="cd-emoji">⏳</div>
+    <div class="cd-title" id="cdTitle"></div>
+    <div class="cd-timer" id="cdTimer">1:00:00</div>
+    <div class="cd-sub"   id="cdSub"></div>
+  </div>
+
+  <!-- Share button — appears after game ends -->
+  <div id="shareRow">
+    <button class="btn-share" id="shareBtn"></button>
+  </div>
+
+  <div class="footer" id="footerTxt"></div>
+</main>
+
+<!-- HOW TO PLAY -->
+<div class="modal-overlay" id="howModal">
+  <div class="modal-box">
+    <div class="m-hdr"><div class="m-title" id="howTtl"></div><button class="m-close" id="howX">✕</button></div>
+    <div class="m-body">
+      <div class="how-desc" id="howIntro"></div>
+      <hr class="how-div">
+      <div class="how-row">
+        <div class="tile correct">P</div><div class="tile absent">A</div>
+        <div class="tile absent">N</div><div class="tile absent">A</div><div class="tile absent">H</div>
+      </div>
+      <div class="how-rule">
+        <div class="how-rule-dot" style="background:var(--corr)"></div>
+        <div class="how-rule-text" id="howG"></div>
+      </div>
+      <div class="how-row">
+        <div class="tile absent">M</div><div class="tile present">A</div>
+        <div class="tile absent">K</div><div class="tile absent">A</div><div class="tile absent">N</div>
+      </div>
+      <div class="how-rule">
+        <div class="how-rule-dot" style="background:var(--pres)"></div>
+        <div class="how-rule-text" id="howY"></div>
+      </div>
+      <div class="how-row">
+        <div class="tile absent">T</div><div class="tile absent">I</div>
+        <div class="tile absent">D</div><div class="tile absent">U</div><div class="tile absent">R</div>
+      </div>
+      <div class="how-rule">
+        <div class="how-rule-dot" style="background:var(--abs)"></div>
+        <div class="how-rule-text" id="howGr"></div>
+      </div>
+      <div class="m-btn-row"><button class="m-btn primary" id="howOk"></button></div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS MODAL -->
+<div class="modal-overlay" id="statsModal">
+  <div class="modal-box">
+    <div class="m-hdr"><div class="m-title" id="statsTtl"></div><button class="m-close" id="statsX">✕</button></div>
+    <div class="m-body">
+      <div class="st-tabs">
+        <button class="st-tab active" id="stEn">🇬🇧 English</button>
+        <button class="st-tab"        id="stMs">🇲🇾 Melayu</button>
+      </div>
+      <div class="sm-stats">
+        <div class="sm-s"><div class="sm-v" id="smP">0</div> <div class="sm-l" id="smPl"></div></div>
+        <div class="sm-s"><div class="sm-v" id="smW">0%</div><div class="sm-l" id="smWl"></div></div>
+        <div class="sm-s"><div class="sm-v" id="smS">0</div> <div class="sm-l" id="smSl"></div></div>
+        <div class="sm-s"><div class="sm-v" id="smB">0</div> <div class="sm-l" id="smBl"></div></div>
+      </div>
+      <div class="dist-ttl" id="distTtl"></div>
+      <div id="distBox"></div>
+      <div id="lgCard" style="display:none" class="lg-card">
+        <div class="lg-lbl" id="lgLbl"></div>
+        <div class="lg-res" id="lgRes"></div>
+        <div class="lg-ans" id="lgAns"></div>
+        <div class="emoji-prev" id="emojiPrev" style="display:none"></div>
+      </div>
+      <div class="m-btn-row">
+        <button class="m-btn gold"    id="shareInStats"></button>
+        <button class="m-btn primary" id="statsOk"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE MODAL -->
+<div class="modal-overlay" id="shareModal">
+  <div class="modal-box">
+    <div class="m-hdr">
+      <div class="m-title" id="shareMTtl">📤 Share Result</div>
+      <button class="m-close" id="shareMX">✕</button>
+    </div>
+    <div class="m-body">
+      <!-- Full share text preview — readable, copyable visually -->
+      <div class="share-preview-box" id="shareMPreview"></div>
+      <div class="m-btn-row">
+        <button class="m-btn gold"    id="shareMCopy">📋 Copy</button>
+        <button class="m-btn primary" id="shareMNative" style="display:none">📤 Share</button>
+        <button class="m-btn" style="background:#f0f2ff;color:var(--txt);" id="shareMClose">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/* ═══════════════════════════════════════════════════════
+   TRANSLATIONS
+═══════════════════════════════════════════════════════ */
+const T={
+en:{
+  sub:      "🌐 Guess the 5-letter word in 6 tries",
+  // Mode
+  modeChallenge:"🏆 Challenge", modePractice:"🎯 Practice",
+  subChallenge:"🏆 Daily word — same for everyone",
+  subPractice: "🎯 Practice mode — play anytime",
+  tDailyLoad:"⏳ Getting today's word…",
+  tDailyReady:"✅ Daily challenge ready! 6 tries.",
+  tPracticeReady:"✅ Practice word ready! 6 tries.",
+  tAlreadyPlayed:"✅ Already played today! Come back tomorrow.",
+  tNoWordSet:"📅 No word set today — using auto word.",
+  shareChallenge: n=>`🏆 Daily Challenge #${n}`,
+  sharePractice:"🎯 Practice",
+  sPl:"Played", sWl:"Win %", sStl:"Streak", sBel:"Best",
+  lC:"Correct position 🟦", lP:"Wrong position 🟧", lA:"Not in word ⬛",
+  btnNew:"🔄 New Game", btnHelp:"❓ How to Play", btnShare:"📤 Share Result",
+  footer:"MY Edu Hub © TEKAWORD | bijak.live/tekaword",
+  howTtl:"🎮 How to Play TEKAWORD",
+  howI:"Guess the <strong>5-letter</strong> word in <strong>6 tries</strong>. Every guess must be a real word. Press <strong>⏎ ENTER</strong> to submit.",
+  howG:"<b class='g'>🟦 Blue</b> — Correct letter, correct position.",
+  howY:"<b class='y'>🟧 Orange</b> — Letter is in the word but wrong position.",
+  howGr:"<b class='a'>⬛ Black</b> — Letter is not in the word at all.",
+  howOk:"Got it!",
+  statsTtl:"📊 Statistics",
+  smPl:"Played", smWl:"Win %", smSl:"Streak", smBl:"Best",
+  distTtl:"GUESS DISTRIBUTION",
+  noG:"No games played yet!",
+  lgLbl:"LAST GAME", lgWon:n=>`Won in ${n} ${n===1?"guess":"guesses"} ✅`, lgLost:"Not solved ❌",
+  stOk:"Close", stShare:"📤 Share",
+  // Cooldown
+  cdTitle:"Take a break!",
+  cdSub:"New game available in:",
+  cdReady:"✅ Ready to play again!",
+  // Toasts
+  tLoad:"⏳ Fetching word…", tReady:"✅ Ready! 6 tries.",
+  tValid:"✅ Valid! Keep going.",
+  tGO:"Game over!", tWait:"Please wait…", tChk:"Checking…",
+  tNoMore:"No more guesses!", tNeed5:"Need 5 letters",
+  tAlpha:"Letters A–Z only", tTried:"Already tried!",
+  tChecking:"Checking", tInvalid:"is not a valid word",
+  tCopied:"📋 Copied! Share your result 🎓", tShared:"✅ Shared!",
+  // Name modal
+  nmWelcome:"Welcome to TEKAWORD! 🎓",
+  nmHint:"What's your name? It'll appear in your results.",
+  nmPlaceholder:"e.g. Ahmad, Sarah…",
+  nmSubmit:"Let's Play! 🚀",
+  nmFooter:"Stored locally on your device only.",
+  nmErrEmpty:"Please enter your name.",
+  nmErrShort:"Name must be at least 2 characters.",
+  nmToast:n=>`Welcome, ${n}! 🎓 Good luck!`,
+  // Rename modal
+  renameTtl:"✏️ Change Name",
+  renameHint:"Enter your new display name.",
+  renameSave:"Save",
+  renameCancel:"Cancel",
+  renameToast:n=>`Name updated to ${n} ✅`,
+  // Share modal
+  shareMTtl:"📤 Share Your Result",
+  shareMCopy:"📋 Copy to Clipboard",
+  shareMNative:"📤 Share via App",
+  shareMClose:"Close",
+  winMsgs:["🏆 GENIUS! 1 try!","🎉 Magnificent!","🎉 Impressive!","🎉 Great!","✅ Well done!","😅 Phew!"],
+  tWon:"🎉 YOU WIN!", tLost:"Game Over! Answer:",
+  shareLabel:"EN", shareUrl:"bijak.live/tekaword",
+},
+ms:{
+  sub:      "🇲🇾 Teka perkataan 5 huruf dalam 6 cubaan",
+  // Mode
+  modeChallenge:"🏆 Cabaran", modePractice:"🎯 Latihan",
+  subChallenge:"🏆 Perkataan harian — sama untuk semua",
+  subPractice: "🎯 Mod latihan — boleh main bila-bila masa",
+  tDailyLoad:"⏳ Mendapat perkataan hari ini…",
+  tDailyReady:"✅ Cabaran harian sedia! 6 cubaan.",
+  tPracticeReady:"✅ Perkataan latihan sedia! 6 cubaan.",
+  tAlreadyPlayed:"✅ Dah main hari ini! Datang semula esok.",
+  tNoWordSet:"📅 Tiada perkataan hari ini — guna perkataan auto.",
+  shareChallenge: n=>`🏆 Cabaran Harian #${n}`,
+  sharePractice:"🎯 Latihan",
+  sPl:"Main", sWl:"Menang", sStl:"Berturut", sBel:"Terbaik",
+  lC:"Kedudukan betul 🟦", lP:"Salah kedudukan 🟧", lA:"Tiada dalam perkataan ⬛",
+  btnNew:"🔄 Permainan Baru", btnHelp:"❓ Cara Main", btnShare:"📤 Kongsi",
+  footer:"MY Edu Hub © TEKAWORD | bijak.live/tekaword",
+  howTtl:"🎮 Cara Main TEKAWORD",
+  howI:"Teka perkataan <strong>5 huruf</strong> dalam <strong>6 cubaan</strong>. Setiap teka mesti perkataan sah. Tekan <strong>⏎ ENTER</strong> untuk hantar.",
+  howG:"<b class='g'>🟦 Biru</b> — Huruf betul & kedudukan tepat.",
+  howY:"<b class='y'>🟧 Jingga</b> — Huruf ada dalam perkataan, tapi salah kedudukan.",
+  howGr:"<b class='a'>⬛ Hitam</b> — Huruf tidak ada dalam perkataan langsung.",
+  howOk:"Faham!",
+  statsTtl:"📊 Statistik",
+  smPl:"Main", smWl:"Menang", smSl:"Berturut", smBl:"Terbaik",
+  distTtl:"TABURAN TEKA",
+  noG:"Belum ada permainan!",
+  lgLbl:"PERMAINAN LEPAS", lgWon:n=>`Menang dalam ${n} teka ✅`, lgLost:"Tidak berjaya ❌",
+  stOk:"Tutup", stShare:"📤 Kongsi",
+  // Cooldown
+  cdTitle:"Berehat sebentar!",
+  cdSub:"Permainan baru tersedia dalam:",
+  cdReady:"✅ Sedia bermain semula!",
+  // Toasts
+  tLoad:"⏳ Mendapat perkataan…", tReady:"✅ Sedia! 6 cubaan.",
+  tValid:"✅ Sah! Teruskan.",
+  tGO:"Permainan tamat!", tWait:"Sila tunggu…", tChk:"Sedang semak…",
+  tNoMore:"Tiada lagi cubaan!", tNeed5:"Perlu 5 huruf",
+  tAlpha:"Huruf A–Z sahaja", tTried:"Sudah dicuba!",
+  tChecking:"Memeriksa", tInvalid:"bukan perkataan sah",
+  tCopied:"📋 Disalin! Kongsi keputusan anda 🎓", tShared:"✅ Dikongsi!",
+  // Name modal
+  nmWelcome:"Selamat Datang ke TEKAWORD! 🎓",
+  nmHint:"Siapa nama anda? Nama akan terpapar dalam keputusan.",
+  nmPlaceholder:"cth. Ahmad, Sarah…",
+  nmSubmit:"Jom Main! 🚀",
+  nmFooter:"Disimpan pada peranti anda sahaja.",
+  nmErrEmpty:"Sila masukkan nama anda.",
+  nmErrShort:"Nama mesti sekurang-kurangnya 2 huruf.",
+  nmToast:n=>`Selamat datang, ${n}! 🎓 Semoga berjaya!`,
+  // Rename modal
+  renameTtl:"✏️ Tukar Nama",
+  renameHint:"Masukkan nama paparan baharu anda.",
+  renameSave:"Simpan",
+  renameCancel:"Batal",
+  renameToast:n=>`Nama ditukar kepada ${n} ✅`,
+  // Share modal
+  shareMTtl:"📤 Kongsi Keputusan",
+  shareMCopy:"📋 Salin ke Papan Klip",
+  shareMNative:"📤 Kongsi melalui Apl",
+  shareMClose:"Tutup",
+  winMsgs:["🏆 GENIUS! 1 cubaan!","🎉 Luar biasa!","🎉 Hebat!","🎉 Bagus!","✅ Syabas!","😅 Hampir!"],
+  tWon:"🎉 MENANG!", tLost:"TAMAT! Jawapan:",
+  shareLabel:"BM", shareUrl:"bijak.live/tekaword",
+}};
+const t=k=>T[lang][k]??T.en[k]??k;
+
+function applyLang(){
+  const en=lang==="en";
+  document.documentElement.lang=en?"en":"ms";
+  document.getElementById("gameSub").textContent   = t("sub");
+  document.getElementById("sPl").textContent        = t("sPl");
+  document.getElementById("sWl").textContent        = t("sWl");
+  document.getElementById("sStl").textContent       = t("sStl");
+  document.getElementById("sBel").textContent       = t("sBel");
+  document.getElementById("legC").textContent       = t("lC");
+  document.getElementById("legP").textContent       = t("lP");
+  document.getElementById("legA").textContent       = t("lA");
+  document.getElementById("helpBtn").textContent    = t("btnHelp");
+  document.getElementById("shareBtn").textContent   = t("btnShare");
+  // Mode buttons
+  document.getElementById("btnChallenge").textContent = t("modeChallenge");
+  document.getElementById("btnPractice").textContent  = t("modePractice");
+  // Subtitle based on current mode
+  document.getElementById("gameSub").textContent =
+    mode==="challenge"?t("subChallenge"):t("subPractice");
+  // newGameBtn
+  const ngb=document.getElementById("newGameBtn");
+  if(ngb&&!ngb.disabled) ngb.textContent=t("btnNew");
+  document.getElementById("footerTxt").innerHTML    = t("footer");
+  document.getElementById("howTtl").textContent     = t("howTtl");
+  document.getElementById("howIntro").innerHTML     = t("howI");
+  document.getElementById("howG").innerHTML         = t("howG");
+  document.getElementById("howY").innerHTML         = t("howY");
+  document.getElementById("howGr").innerHTML        = t("howGr");
+  document.getElementById("howOk").textContent      = t("howOk");
+  document.getElementById("statsTtl").textContent   = t("statsTtl");
+  document.getElementById("lgLbl").textContent      = t("lgLbl");
+  document.getElementById("cdTitle").textContent    = t("cdTitle");
+  document.getElementById("cdSub").textContent      = t("cdSub");
+}
+
+/* ═══════════════════════════════════════════════════════
+   CONSTANTS & STATE
+═══════════════════════════════════════════════════════ */
+const WLEN=5, MAX=6;
+const COOLDOWN=0; // Practice has no cooldown — play anytime
+
+let lang="en", mode="challenge"; // "challenge" | "practice"
+let answer="";
+let guesses=[], results=[];
+let gameOver=false, isLoading=false, isChecking=false, isAnimating=false;
+let buf="", keyState={};
+let cdInterval=null;
+
+/* ═══════════════════════════════════════════════════════
+   COOLDOWN
+═══════════════════════════════════════════════════════ */
+/* Single global cooldown key — Practice mode only */
+function cdKey(){return "tw_cd_practice";}
+function setCooldown(){
+  if(mode==="practice") localStorage.setItem(cdKey(),Date.now());
+}
+function getRemainingMs(){
+  if(mode!=="practice") return 0; // Challenge has no cooldown
+  const ts=+localStorage.getItem(cdKey())||0;
+  if(!ts)return 0;
+  return Math.max(0,COOLDOWN-(Date.now()-ts));
+}
+
+/* Challenge — played today check */
+function challengeKey(){return `tw_challenge_${lang}_${mytDate()}`;}
+function hasPlayedChallenge(){return !!localStorage.getItem(challengeKey());}
+function markChallengePlayedToday(){localStorage.setItem(challengeKey(),"1");}
+function fmtMs(ms){
+  const totalSec=Math.ceil(ms/1000);
+  const h=Math.floor(totalSec/3600);
+  const m=Math.floor((totalSec%3600)/60);
+  const s=totalSec%60;
+  if(h>0) return `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  return `${m}:${String(s).padStart(2,"0")}`;
+}
+
+function startCooldownTimer(){
+  stopCooldownTimer();
+  updateCooldownUI();
+  cdInterval=setInterval(updateCooldownUI,1000);
+}
+function stopCooldownTimer(){
+  if(cdInterval){clearInterval(cdInterval);cdInterval=null;}
+}
+
+function updateCooldownUI(){
+  const rem=getRemainingMs();
+  const btn=document.getElementById("newGameBtn");
+  const banner=document.getElementById("cdBanner");
+
+  if(rem>0){
+    btn.disabled=true;
+    btn.textContent=`⏳ ${fmtMs(rem)}`;
+    document.getElementById("cdTimer").textContent=fmtMs(rem);
+    banner.classList.add("show");
+  }else{
+    stopCooldownTimer();
+    btn.disabled=false;
+    btn.textContent=t("btnNew");
+    banner.classList.remove("show");
+  }
+}
+
+function checkCooldown(){
+  if(getRemainingMs()>0) startCooldownTimer();
+  else updateCooldownUI();
+}
+
+/* ═══════════════════════════════════════════════════════
+   STATS — separate EN / MS  (keys: tw_en, tw_ms)
+═══════════════════════════════════════════════════════ */
+function getStats(l=lang){
+  try{const s=JSON.parse(localStorage.getItem(`tw_${l}`)||"{}");
+    return{played:s.played||0,wins:s.wins||0,streak:s.streak||0,best:s.best||0,
+           dist:s.dist||Array(6).fill(0),lastGame:s.lastGame||null};
+  }catch{return{played:0,wins:0,streak:0,best:0,dist:Array(6).fill(0),lastGame:null};}
+}
+function saveStats(s,l=lang){
+  try{localStorage.setItem(`tw_${l}`,JSON.stringify(s));}catch{}
+}
+function refreshMini(){
+  const s=getStats();
+  document.getElementById("sP").textContent  = s.played;
+  document.getElementById("sW").textContent  = s.played?Math.round(s.wins/s.played*100)+"%":"0%";
+  document.getElementById("sSt").textContent = s.streak;
+  document.getElementById("sBe").textContent = s.best;
+}
+function recordResult(won){
+  if(mode==="challenge"){
+    markChallengePlayedToday();
+    // Save challenge stats separately: tw_ch_en / tw_ch_ms
+    const sk=`tw_ch_${lang}`;
+    try{
+      const s=JSON.parse(localStorage.getItem(sk)||"{}");
+      s.played=(s.played||0)+1;
+      if(won){s.wins=(s.wins||0)+1;s.streak=(s.streak||0)+1;s.best=Math.max(s.best||0,s.streak);
+        if(!s.dist||s.dist.length!==6)s.dist=Array(6).fill(0);
+        s.dist[Math.min(guesses.length-1,5)]++;
+      }else s.streak=0;
+      s.lastGame={won,guesses:guesses.length,answer};
+      localStorage.setItem(sk,JSON.stringify(s));
+    }catch{}
+  }
+  const s=getStats();s.played++;
+  if(won){s.wins++;s.streak++;s.best=Math.max(s.best,s.streak);
+    if(s.dist.length!==6)s.dist=Array(6).fill(0);
+    s.dist[Math.min(guesses.length-1,5)]++;
+  }else s.streak=0;
+  s.lastGame={won,guesses:guesses.length,answer,mode};
+  saveStats(s);refreshMini();
+}
+
+/* ── Stats modal ─────────────────────────────────────── */
+let viewL=lang;
+function buildStats(vl=viewL){
+  viewL=vl;
+  document.getElementById("stEn").classList.toggle("active",vl==="en");
+  document.getElementById("stMs").classList.toggle("active",vl==="ms");
+  const s=getStats(vl), dl=T[vl];
+
+  document.getElementById("smP").textContent  = s.played;
+  document.getElementById("smW").textContent  = s.played?Math.round(s.wins/s.played*100)+"%":"0%";
+  document.getElementById("smS").textContent  = s.streak;
+  document.getElementById("smB").textContent  = s.best;
+  document.getElementById("smPl").textContent = dl.smPl;
+  document.getElementById("smWl").textContent = dl.smWl;
+  document.getElementById("smSl").textContent = dl.smSl;
+  document.getElementById("smBl").textContent = dl.smBl;
+  document.getElementById("distTtl").textContent = dl.distTtl;
+  document.getElementById("statsOk").textContent  = dl.stOk;
+  document.getElementById("shareInStats").textContent = dl.stShare;
+
+  const mx=Math.max(...s.dist,1), lg=s.lastGame;
+  let h="";
+  if(!s.played){h=`<div class="no-game">${dl.noG}</div>`;}
+  else s.dist.forEach((c,i)=>{
+    const pct=Math.max(Math.round(c/mx*100),c>0?8:0);
+    const isCur=lg&&lg.won&&lg.guesses===(i+1);
+    const isL  =lg&&!lg.won&&(i+1)===MAX&&c>0;
+    const cls  =isCur?"bc":isL?"bl":c>0?"bw":"";
+    h+=`<div class="dist-row"><div class="dist-n">${i+1}</div>
+      <div class="dist-track"><div class="dist-bar ${cls}" style="width:${pct}%">
+        <span class="dist-ct">${c}</span></div></div></div>`;
+  });
+  document.getElementById("distBox").innerHTML=h;
+
+  const lgCard=document.getElementById("lgCard");
+  const ep=document.getElementById("emojiPrev");
+  if(lg){
+    const r=document.getElementById("lgRes");
+    r.className="lg-res "+(lg.won?"won":"lost");
+    r.textContent=lg.won?dl.lgWon(lg.guesses):dl.lgLost;
+    document.getElementById("lgAns").textContent=lg.answer?.toUpperCase().split("").join(" ");
+    if(vl===lang&&gameOver&&results.length){
+      ep.textContent=buildEmojiGrid();ep.style.display="";
+    }else ep.style.display="none";
+    lgCard.style.display="";
+  }else lgCard.style.display="none";
+
+  // Share only relevant for current game lang
+  document.getElementById("shareInStats").style.opacity=(vl===lang&&gameOver)?1:.4;
+}
+
+function openStats(){viewL=lang;buildStats(viewL);openModal("statsModal");}
+
+/* ═══════════════════════════════════════════════════════
+   SHARE
+═══════════════════════════════════════════════════════ */
+function buildEmojiGrid(){
+  return results.map(r=>
+    r.map(v=>v==="correct"?"🟦":v==="present"?"🟧":"⬛").join("")
+  ).join("\n");
+}
+
+function buildShareText(){
+  const won=guesses.length>0&&guesses[guesses.length-1]===answer;
+  const score=won?guesses.length:"X";
+  const lbl=t("shareLabel");
+  const url=t("shareUrl");
+  const grid=buildEmojiGrid();
+  const modeLbl=mode==="challenge"
+    ? t("shareChallenge")(dayNumber())
+    : t("sharePractice");
+  return `TEKAWORD 🎓 MY Edu Hub\n${modeLbl} ${score}/${MAX} (${lbl})\n\n${grid}\n\n${url}`;
+}
+/* Opens share modal — content shown in foreground, not clipboard flash */
+function openShareModal(){
+  if(!gameOver||!results.length){toast(t("tGO"),"err");return;}
+  const text=buildShareText();
+
+  // Populate modal
+  document.getElementById("shareMTtl").textContent   = t("shareMTtl");
+  document.getElementById("shareMPreview").textContent= text;
+  document.getElementById("shareMCopy").textContent   = t("shareMCopy");
+  document.getElementById("shareMClose").textContent  = t("shareMClose");
+
+  // Show/hide native share button based on API availability
+  const nBtn=document.getElementById("shareMNative");
+  nBtn.textContent=t("shareMNative");
+  nBtn.style.display=navigator.share?"":"none";
+
+  openModal("shareModal");
+}
+
+async function copyToClipboard(){
+  const text=buildShareText();
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch{
+    // Fallback: off-screen textarea (not visible)
+    const ta=document.createElement("textarea");
+    ta.value=text;
+    ta.style.cssText="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;";
+    document.body.appendChild(ta);ta.select();
+    document.execCommand("copy");document.body.removeChild(ta);
+  }
+  toast(t("tCopied"),"ok",3500);
+}
+
+async function nativeShare(){
+  try{
+    await navigator.share({title:"TEKAWORD • MY Edu Hub",text:buildShareText()});
+    toast(t("tShared"),"ok");
+  }catch(e){if(e.name!=="AbortError")toast(t("tShareFail"),"err");}
+}
+
+// Keep old name for backward compat (stats modal still calls this)
+const shareResult=openShareModal;
+
+/* ═══════════════════════════════════════════════════════
+   PLAYER NAME — one-time entry, stored in localStorage
+═══════════════════════════════════════════════════════ */
+const NAME_KEY="tw_player_name";
+
+function getPlayerName(){return localStorage.getItem(NAME_KEY)||"";}
+function savePlayerName(n){localStorage.setItem(NAME_KEY,n.trim());}
+
+function applyNameToUI(name){
+  if(!name)return;
+  const chip  =document.getElementById("tbPlayer");
+  const avatar=document.getElementById("tbAvatar");
+  const pname =document.getElementById("tbPname");
+  if(!chip)return;
+  avatar.textContent=name.charAt(0).toUpperCase();
+  pname.textContent =name;
+  chip.style.display="flex"; // direct style — don't rely on class toggle
+}
+
+// Apply name chip as early as possible (DOM already parsed at this point)
+;(function earlyNameApply(){
+  const name=getPlayerName();
+  if(name){
+    // DOM is parsed (script is at end of body) — safe to run now
+    requestAnimationFrame(()=>applyNameToUI(name));
+  }
+})();
+
+function applyNameModal(){
+  document.getElementById("nmWelcome").textContent  = t("nmWelcome");
+  document.getElementById("nmHint").textContent     = t("nmHint");
+  document.getElementById("nameInput").placeholder  = t("nmPlaceholder");
+  document.getElementById("nameSubmit").textContent = t("nmSubmit");
+  document.getElementById("nmFooter").textContent   = t("nmFooter");
+  document.getElementById("nameErr").textContent    = "";
+}
+
+/* submitName is global (called by onclick AND addEventListener) */
+function submitName(){
+  const input = document.getElementById("nameInput");
+  const errEl = document.getElementById("nameErr");
+  const name  = (input.value || "").trim();
+
+  errEl.textContent = "";
+
+  if(!name){
+    errEl.textContent = t("nmErrEmpty");
+    input.focus();
+    return;
+  }
+  if(name.length < 2){
+    errEl.textContent = t("nmErrShort");
+    input.focus();
+    return;
+  }
+
+  savePlayerName(name);
+  applyNameToUI(name);
+
+  const overlay = document.getElementById("nameOverlay");
+  overlay.style.transition = "opacity .3s ease";
+  overlay.style.opacity    = "0";
+  setTimeout(() => {
+    overlay.classList.add("hidden");
+    overlay.style.opacity = "";  // reset for potential re-show
+  }, 300);
+
+  toast(t("nmToast")(name), "ok", 4000);
+}
+
+function checkFirstVisit(){
+  const name = getPlayerName();
+  if(name){
+    document.getElementById("nameOverlay").classList.add("hidden");
+    applyNameToUI(name);
+  } else {
+    applyNameModal();
+    /* Enter key in input submits */
+    document.getElementById("nameInput").addEventListener("keydown", e => {
+      e.stopPropagation();
+      if(e.key === "Enter"){ e.preventDefault(); submitName(); }
+    });
+  }
+}
+
+/* ── Rename modal (click name chip to change name) ───── */
+function applyRenameModal(){
+  document.getElementById("renameTtl").textContent    = t("renameTtl");
+  document.getElementById("renameHint").textContent   = t("renameHint");
+  document.getElementById("renameSave").textContent   = t("renameSave");
+  document.getElementById("renameCancel").textContent = t("renameCancel");
+  document.getElementById("renameErr").textContent    = "";
+  const inp = document.getElementById("renameInput");
+  inp.value = getPlayerName();        // pre-fill current name
+  inp.placeholder = t("nmPlaceholder");
+}
+
+function openRenameModal(){
+  applyRenameModal();
+  openModal("renameModal");
+  setTimeout(()=>{ const inp=document.getElementById("renameInput"); inp.focus(); inp.select(); }, 150);
+}
+
+/* saveName — global so onclick attribute works */
+function saveName(){
+  const input = document.getElementById("renameInput");
+  const errEl = document.getElementById("renameErr");
+  const name  = (input.value||"").trim();
+  errEl.textContent = "";
+  if(!name){ errEl.textContent=t("nmErrEmpty"); input.focus(); return; }
+  if(name.length<2){ errEl.textContent=t("nmErrShort"); input.focus(); return; }
+  savePlayerName(name);
+  applyNameToUI(name);
+  closeModal("renameModal");
+  toast(t("renameToast")(name),"ok",3000);
+}
+
+/* ═══════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════ */
+function toast(msg,type="",ms=2800){
+  const w=document.getElementById("toastWrap");
+  const el=document.createElement("div");
+  el.className="twt"+(type?" "+type:"");
+  el.innerHTML=msg;w.appendChild(el);
+  if(ms>0)setTimeout(()=>{el.style.animation="twOut .18s ease forwards";setTimeout(()=>el.remove(),180);},ms);
+  return el;
+}
+function clearToasts(){document.getElementById("toastWrap").innerHTML="";}
+
+/* ═══════════════════════════════════════════════════════
+   ENGLISH — random-words-api + Datamuse validation
+   Strict: exactly 5 lowercase a-z letters guaranteed
+═══════════════════════════════════════════════════════ */
+const EN_FB=["crane","brain","stone","heart","light","apple","table","chair","house","money",
+  "plant","water","earth","flame","cloud","storm","night","dream","peace","grace",
+  "brush","clock","eagle","faith","giant","honey","ivory","jewel","lemon","maple",
+  "noble","ocean","piano","quest","river","skill","tiger","vivid","flute","brave",
+  "chill","ember","delta","bloom","glare","shout","frost","spark","prune","dwarf",
+  "groan","stomp","blaze","whirl","crisp","frond","plumb","scamp","trout","snore"];
+
+async function fetchEnAnswer(){
+  for(let i=0;i<8;i++){
+    try{
+      const ctrl=new AbortController();
+      setTimeout(()=>ctrl.abort(),3500);
+      const r=await fetch("https://random-words-api.vercel.app/word",{signal:ctrl.signal});
+      if(!r.ok)throw 0;
+      const d=await r.json();
+      if(Array.isArray(d)&&d[0]?.word){
+        const w=d[0].word.toLowerCase().trim();
+        // Strict 5-letter, a-z only
+        if(w.length===5&&/^[a-z]{5}$/.test(w))return w;
+      }
+    }catch{}
+  }
+  return EN_FB[Math.floor(Math.random()*EN_FB.length)];
+}
+
+/* ═══════════════════════════════════════════════════════
+   FIREBASE — daily word
+═══════════════════════════════════════════════════════ */
+import{initializeApp}   from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getFirestore,doc,getDoc} from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const _fbApp = initializeApp({
+  apiKey:"AIzaSyAAsrLp1d0SAapzWy_v5HWKiFNrIcZhLUQ",
+  authDomain:"bijak-tekaword.firebaseapp.com",
+  projectId:"bijak-tekaword",
+  storageBucket:"bijak-tekaword.firebasestorage.app",
+  messagingSenderId:"600008465379",
+  appId:"1:600008465379:web:3bf800fc10d048acc6ded6"
+});
+const _db = getFirestore(_fbApp);
+
+/* MYT date key — same for all users worldwide */
+function mytDate(){
+  return new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kuala_Lumpur"});
+}
+
+/* Day number since epoch (for Challenge # in share) */
+function dayNumber(){
+  const start=new Date("2026-05-01T00:00:00+08:00");
+  const now  =new Date();
+  return Math.floor((now-start)/(1000*60*60*24))+1;
+}
+
+async function fetchDailyWord(l){
+  try{
+    const snap=await getDoc(doc(_db,"tekaword","daily",mytDate(),"words"));
+    if(snap.exists()){
+      const w=(snap.data()[l]||"").toLowerCase().trim();
+      if(w.length===5&&/^[a-z]{5}$/.test(w)) return w;
+    }
+  }catch(e){console.warn("Firebase fetch failed:",e);}
+  return null; // null = no word set today
+}
+
+/* Seeded fallback — same date = same word, no server needed */
+function seededWord(pool){
+  const d=mytDate().replace(/-/g,"");
+  const seed=parseInt(d)%pool.length;
+  return pool[seed];
+}
+
+/* BM validation list — loaded once from GitHub */
+let bmValidSet = null;
+async function loadBmValid(){
+  if(bmValidSet) return; // already loaded
+  try{
+    const r=await fetch("https://raw.githubusercontent.com/bijakeduhub/tekaword-/main/data/bm_valid.json");
+    if(!r.ok) throw 0;
+    const arr=await r.json();
+    bmValidSet=new Set(arr);
+  }catch{
+    bmValidSet=MS_SET; // fallback to local set
+  }
+}
+
+async function isValidMs(word){
+  await loadBmValid();
+  return bmValidSet ? bmValidSet.has(word) : true;
+}
+
+/* ═══════════════════════════════════════════════════════
+   MALAY — 500+ curated 5-letter words (fully offline)
+   Answers: random from local list
+   Validation: ACCEPT ALL — no API calls, no rejections
+   → kawah, tawaf, solat, rotan all work correctly
+═══════════════════════════════════════════════════════ */
+const MS_LOCAL=[
+/* Religion / Islamic */
+"solat","puasa","zakat","wakaf","nikah","talak","cerai","tawaf","zikir",
+/* Nature / Weather / Geography */
+"hujan","angin","bulan","senja","petir","kilat","salji","kabus","embun","cuaca",
+"iklim","musim","pasir","tanah","bukit","tasik","pulau","hutan","rimba","sawah",
+"kebun","pekan","ribut","fajar","subuh","malam","siang","waktu","cerah","kawah",
+"barat","timur","utara","lautan","bandar","dusun","badai","lembah","rawa","delta",
+"teluk","hilir","sungai","banjir","gunung","pantai","taman",
+/* Animals */
+"pipit","katak","ketam","udang","gajah","singa","lembu","zebra","tokek","cicak",
+"buaya","semut","lebah","arnab","gagak","murai","helang","tupai","kancil","rusa",
+"burung","tikus","kuda","itik","ayam","ikan","kucing","anjing","kambing","kerbau",
+"kelawar","lipas","kumbang","labah","harimau","monyet","beruang",
+/* Plants / Food */
+"betik","halia","serai","bunga","pokok","benih","tunas","pucuk","dahan","pedas",
+"lemak","masak","timun","kerak","nenas","getah","limau","jambu","pulut","gulai",
+"garam","tapai","kobis","kapur","sayur","buah","beras","nasi","lauk","kuih",
+"kacang","pisang","mangga","cendol","laksa","satay","rendang","sambal","belacan",
+"tempeh","tauhu","rojak","bubur","goreng","rebus","kukus","tepung","minyak",
+/* Body / Health */
+"darah","sakit","demam","batuk","ubat","mulut","perut","kulit","nafas","tulang",
+"jantung","otak","kaki","tangan","leher","dada","bahu","lutut","siku","pipi",
+"dahi","lidah","urat","otot","pundi","usus",
+/* Colours */
+"merah","putih","hijau","hitam","warna","biru","kuning","jingga","perang","kelabu",
+"ungu","coklat","pekat","pucat","cerah",
+/* Descriptive */
+"besar","kecil","panas","sejuk","cepat","manis","masam","pahit","tebal","nipis",
+"berat","padat","keras","licin","kasar","basah","busuk","harum","wangi","masin",
+"tawar","halus","kukuh","teguh","buruk","penuh","bulat","indah","hebat","lemah",
+"gagah","gelap","resah","rindu","kagum","jujur","setia","kasih","murni","kotor",
+"marah","sedih","takut","bodoh","sopan","rajin","malas","bijak","gigih","tabah",
+"tekun","cekal","lapar","penat","comel","hodoh","gemuk","kurus","sihat","murah",
+"mahal","teruk","segak","tajam","nyata","manja","jahat","lembut","rapuh","tegap",
+"berani","pandai","cermat","lelah","payah","susah","cinta","harap","mimpi",
+"walau","kalau","hanya","namun","tentu","risau","gembira","suka","benci",
+"malu","bangga","ceria","girang","pilu","duka","lega","kecewa","tegang","tenang",
+/* Verbs */
+"makan","minum","tidur","jalan","duduk","tulis","pandu","bantu","masuk","tolak",
+"cukup","faham","bayar","juang","usaha","tarik","dapat","ambil","tutup","turun",
+"tahan","gelak","bisik","janji","lawan","jumpa","kenal","ingat","fikir","sabar",
+"minta","balik","buang","tanam","cabut","gosok","cubit","gigit","kejar","putar",
+"tekan","tanya","jawab","pergi","telan","bakar","basuh","cuci","hirup","potong",
+"iris","kacau","gaul","tapis","ramas","picit","angkat","bawa","hantar","letak",
+"simpan","curi","beli","jual","tukar","pinjam","kira","agak","teka","tahu",
+"lupa","hafal","baca","lukis","nyanyi","tilik","ronda","jaga","kawal","siasat",
+"tangkap","lepas","halau","usir","larikan","sembunyi","sorok",
+/* Nouns — people, places, things */
+"sukan","raket","modal","bonus","kapal","kelas","kakak","tokoh","polis","pilot",
+"cukai","saham","harta","waris","hakim","bebas","dasar","ketua","benua","wakil",
+"rumah","dapur","bilik","papan","kapas","jarum","harga","logam","pintu","abang",
+"nenek","datuk","rakan","kawan","musuh","suara","kotak","bujur","nasib","ilmu",
+"novel","badan","kerja","niaga","taraf","gaduh","galau","lawak","debat","tugas",
+"kunci","lampu","sabun","salam","ulang","asing","rotan","murid","budak","orang",
+"angka","huruf","baris","kedai","pasar","surau","minit","tahun","bunyi","filem",
+"muzik","tinta","tilam","tuala","kasut","poket","roket","radio","meja","tangga",
+"lorong","lebuh","simpang","jambatan","hospital","klinik","sekolah","masjid",
+"pejabat","negeri","negara","dunia","planet","gadis","wanita","remaja","bola",
+"tinju","renang","skuad","pasukan","juara","hasil","untung","rugi","wang","ringgit",
+"duit","miskin","kaya","sayang","impian","azam","tekad","hadiah","majlis","acara",
+/* States / Modal */
+"kalah","layak","patut","salah","benar","tepat","sahih","pasti","yakin","boleh",
+"mampu","wajib","perlu","mesti","sudah","belum","masih","bakal","lebih","semua",
+"ramai","gagal","tidak","bukan","betul","dalam","depan","kanan","bawah","dekat",
+"jauh","atas","tepi","luar","tengah","hampir","tanpa","selain","serta","sebab",
+"wajah","tapak","nombor","rekod","naskah","sijil","permit","lesen","kaedah",
+"teknik","sistem","proses","tadbir","urus","audit","nilai","markah","gred",
+"ijazah","diploma","ujian","latihan","kursus","seminar","bengkel","wuduk",
+"soleh","takwa","ihsan","taubat","syukur","redha","ikhlas","adil","dakwah",
+];
+
+const MS_WORDS=[...new Set(MS_LOCAL.filter(w=>w.length===5&&/^[a-z]{5}$/.test(w)))];
+const MS_SET  =new Set(MS_WORDS);
+const getMsAnswer=()=>MS_WORDS[Math.floor(Math.random()*MS_WORDS.length)];
+
+/* Accept all 5-letter a-z strings in BM mode — no API, no rejections.
+   Answers come from curated local list; guesses accepted freely. */
+async function isValidMs(){ return true; }
+async function fetchMsAnswer(){ return getMsAnswer(); }
+
+/* ═══════════════════════════════════════════════════════
+   CORE LOGIC
+═══════════════════════════════════════════════════════ */
+function evaluate(guess,ans){
+  const res=Array(WLEN).fill("absent"),a=ans.split("");
+  for(let i=0;i<WLEN;i++)if(guess[i]===a[i]){res[i]="correct";a[i]=null;}
+  for(let i=0;i<WLEN;i++){if(res[i]==="correct")continue;
+    const x=a.indexOf(guess[i]);if(x!==-1){res[i]="present";a[x]=null;}}
+  return res;
+}
+function updateKeys(guess,res){
+  const p={correct:3,present:2,absent:1};
+  for(let i=0;i<WLEN;i++){const l=guess[i],s=res[i];
+    if(!keyState[l]||p[s]>p[keyState[l]])keyState[l]=s;}
+}
+
+/* ═══════════════════════════════════════════════════════
+   RENDERING
+═══════════════════════════════════════════════════════ */
+function renderGrid(){
+  const g=document.getElementById("grid");g.innerHTML="";
+  for(let row=0;row<MAX;row++){
+    const rd=document.createElement("div");rd.className="row";rd.id=`r${row}`;
+    const gs=row<guesses.length?guesses[row]:null;
+    const rs=row<results.length?results[row]:null;
+    for(let col=0;col<WLEN;col++){
+      const tile=document.createElement("div");tile.className="tile";tile.id=`t${row}${col}`;
+      if(gs){
+        tile.textContent=gs[col].toUpperCase();tile.classList.add("filled");
+        if(rs[col]==="correct")tile.classList.add("correct");
+        else if(rs[col]==="present")tile.classList.add("present");
+        else tile.classList.add("absent");
+      }else if(row===guesses.length&&!gameOver&&!isLoading&&col<buf.length){
+        tile.textContent=buf[col].toUpperCase();tile.classList.add("filled");
+      }
+      rd.appendChild(tile);
+    }
+    g.appendChild(rd);
+  }
+}
+
+const KBR=[["q","w","e","r","t","y","u","i","o","p"],
+           ["a","s","d","f","g","h","j","k","l"],
+           ["enter","z","x","c","v","b","n","m","del"]];
+
+function buildKeyboard(){
+  const kb=document.getElementById("keyboard");kb.innerHTML="";
+  for(const row of KBR){
+    const rd=document.createElement("div");rd.className="key-row";
+    for(const k of row){
+      const btn=document.createElement("button");
+      btn.id=`k-${k}`;btn.className="key"+(k==="enter"||k==="del"?" wide":"");
+      btn.textContent=k==="enter"?"⏎":k==="del"?"⌫":k.toUpperCase();
+      btn.addEventListener("click",()=>onKey(k));
+      rd.appendChild(btn);
+    }
+    kb.appendChild(rd);
+  }
+  paintKeys();
+}
+/* paintKeys — updates web keyboard colour state after each guess */
+function paintKeys(){
+  for(const row of KBR)for(const k of row){
+    if(k==="enter"||k==="del")continue;
+    const btn=document.getElementById(`k-${k}`);if(!btn)continue;
+    btn.classList.remove("correct","present","absent");
+    if(keyState[k])btn.classList.add(keyState[k]);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   ANIMATION — fresh getElementById inside every timeout
+═══════════════════════════════════════════════════════ */
+function animReveal(rowIdx,res,onDone){
+  isAnimating=true;
+  for(let c=0;c<WLEN;c++){
+    const t=document.getElementById(`t${rowIdx}${c}`);
+    if(t)t.classList.remove("correct","present","absent");
+  }
+  for(let col=0;col<WLEN;col++){
+    (function(c){
+      setTimeout(()=>{
+        const t=document.getElementById(`t${rowIdx}${c}`);if(!t)return;
+        t.style.transition="transform .22s ease";
+        t.style.transform="rotateX(-90deg) scale(.85)";
+        setTimeout(()=>{
+          const t2=document.getElementById(`t${rowIdx}${c}`);if(!t2)return;
+          if(res[c]==="correct")t2.classList.add("correct");
+          else if(res[c]==="present")t2.classList.add("present");
+          else t2.classList.add("absent");
+          t2.style.transform="rotateX(0) scale(1)";
+        },230);
+      },c*130);
+    })(col);
+  }
+  setTimeout(()=>{isAnimating=false;if(onDone)onDone();},(WLEN-1)*130+470);
+}
+
+function animBounce(rowIdx){
+  setTimeout(()=>{
+    for(let col=0;col<WLEN;col++){
+      (function(c){setTimeout(()=>{
+        const t=document.getElementById(`t${rowIdx}${c}`);if(!t)return;
+        t.classList.add("bounce");setTimeout(()=>t.classList.remove("bounce"),500);
+      },c*70);})(col);
+    }
+  },120);
+}
+
+function shakeRow(rowIdx){
+  const r=document.getElementById(`r${rowIdx}`);
+  if(r){r.classList.add("shake");setTimeout(()=>r.classList.remove("shake"),400);}
+}
+
+/* ═══════════════════════════════════════════════════════
+   SUBMIT
+   buf cleared BEFORE renderGrid inside submitGuess
+   → next active row always empty
+═══════════════════════════════════════════════════════ */
+async function submitGuess(guess){
+  if(gameOver)  {toast(t("tGO"),"err");return false;}
+  if(isLoading) {toast(t("tWait"),"err");return false;}
+  if(isChecking){toast(t("tChk"),"err");return false;}
+  if(!answer)   {toast(t("tWait"),"err");return false;} // answer not loaded yet
+  if(guesses.length>=MAX){toast(t("tNoMore"),"err");return false;}
+  if(guess.length!==WLEN){toast(t("tNeed5"),"err");return false;}
+  if(!/^[a-z]{5}$/.test(guess)){toast(t("tAlpha"),"err");return false;}
+  if(guesses.includes(guess)){toast(t("tTried"),"err");return false;}
+
+  isChecking=true;
+  const chk=toast(`${t("tChecking")} <strong>${guess.toUpperCase()}</strong>…<span class="spin"></span>`,"",0);
+  const valid=lang==="en"?await isValidEn(guess):await isValidMs(guess);
+  chk.remove();isChecking=false;
+
+  if(!valid){
+    toast(`"${guess.toUpperCase()}" ${t("tInvalid")}`,"err");
+    shakeRow(guesses.length);return false;
+  }
+
+  // Accept
+  const rowIdx=guesses.length;
+  guesses.push(guess);
+  const res=evaluate(guess,answer);
+  results.push(res);
+  updateKeys(guess,res);
+
+  // Clear buf BEFORE renderGrid → next row is empty
+  buf="";
+  renderGrid();
+  paintKeys();
+
+  const won =guess===answer;
+  const lost=!won&&guesses.length===MAX;
+
+  animReveal(rowIdx,res,()=>{
+    if(won){
+      gameOver=true;animBounce(rowIdx);
+      toast(t("winMsgs")[guesses.length-1]||t("tWon"),"ok",7000);
+      recordResult(true);
+      setCooldown();            // ← start 30-min cooldown
+      showPostGame();
+      setTimeout(()=>openStats(),1800);
+    }else if(lost){
+      gameOver=true;
+      toast(`${t("tLost")} <strong>${answer.toUpperCase()}</strong>`,"err",9000);
+      recordResult(false);
+      setCooldown();            // ← start 30-min cooldown
+      showPostGame();
+      setTimeout(()=>openStats(),2200);
+    }else{
+      toast(t("tValid"),"",2000);
+    }
+  });
+  return true;
+}
+
+function showPostGame(){
+  document.getElementById("shareRow").classList.add("show");
+  // No cooldown for either mode — Practice is unlimited, Challenge is daily
+}
+
+/* ═══════════════════════════════════════════════════════
+   KEY HANDLING
+═══════════════════════════════════════════════════════ */
+async function onKey(k){
+  if(gameOver||isLoading||isChecking||isAnimating)return;
+  if(k==="enter"){
+    if(buf.length===WLEN){
+      const ok=await submitGuess(buf);
+      if(!ok) renderGrid();
+    }else{toast(t("tNeed5"),"err");shakeRow(guesses.length);}
+  }else if(k==="del"){
+    if(buf.length>0){buf=buf.slice(0,-1);renderGrid();}
+  }else{
+    if(buf.length<WLEN){buf+=k;renderGrid();}
+  }
+}
+
+/* Physical keyboard support (desktop) */
+function onPhysKey(e){
+  if(gameOver||isLoading||isChecking||isAnimating)return;
+  if(e.key==="Enter"){e.preventDefault();onKey("enter");}
+  else if(e.key==="Backspace"){e.preventDefault();onKey("del");}
+  else if(/^[a-zA-Z]$/.test(e.key)){e.preventDefault();onKey(e.key.toLowerCase());}
+}
+
+/* paintColorStrip is not used — unified keyboard for all devices */
+
+/* ═══════════════════════════════════════════════════════
+   FETCH ANSWER
+   Challenge → Firebase daily word → seeded fallback
+   Practice  → random from local pool
+═══════════════════════════════════════════════════════ */
+async function fetchAnswer(){
+  isLoading=true;
+  const el=toast(`${t("tDailyLoad")}<span class="spin"></span>`,"",0);
+  try{
+    let w=null;
+
+    if(mode==="challenge"){
+      // 1. Try Firebase
+      w=await fetchDailyWord(lang);
+      if(!w){
+        // 2. Seeded fallback
+        toast(t("tNoWordSet"),"",3000);
+        w=lang==="en"
+          ? seededWord(EN_FB)
+          : seededWord(MS_WORDS);
+      }
+    }else{
+      // Practice — random local word
+      w=lang==="en"
+        ? EN_FB[Math.floor(Math.random()*EN_FB.length)]
+        : MS_WORDS[Math.floor(Math.random()*MS_WORDS.length)];
+    }
+
+    // Safety check
+    if(!w||w.length!==5||!/^[a-z]{5}$/.test(w)){
+      w=lang==="en"?EN_FB[0]:MS_WORDS[0];
+    }
+    answer=w;
+    el.remove();
+    const msg=mode==="challenge"?t("tDailyReady"):t("tPracticeReady");
+    setTimeout(()=>toast(msg,"ok"),80);
+
+    // Preload BM validation in background
+    if(lang==="ms") loadBmValid();
+
+  }catch(e){
+    el.remove();toast("❌ Error. Try again.","err",6000);gameOver=true;
+  }
+  isLoading=false;
+}
+
+/* ═══════════════════════════════════════════════════════
+   GAME FLOW
+═══════════════════════════════════════════════════════ */
+async function resetGame(){
+  // Challenge — check if already played today
+  if(mode==="challenge"&&hasPlayedChallenge()){
+    toast(t("tAlreadyPlayed"),"ok",6000);
+    return;
+  }
+  // Practice — no cooldown, always allowed
+  stopCooldownTimer();
+  gameOver=false;guesses=[];results=[];
+  buf="";keyState={};isAnimating=false;answer="";
+  clearToasts();
+  document.getElementById("shareRow").classList.remove("show");
+  document.getElementById("cdBanner").classList.remove("show");
+  renderGrid();buildKeyboard();
+  await fetchAnswer();
+}
+
+async function switchMode(m){
+  mode=m;
+  document.getElementById("btnChallenge").classList.toggle("active",m==="challenge");
+  document.getElementById("btnPractice").classList.toggle("active",m==="practice");
+  document.getElementById("btnPractice").classList.toggle("practice",m==="practice");
+  // Update subtitle
+  document.getElementById("gameSub").textContent=
+    m==="challenge"?t("subChallenge"):t("subPractice");
+  // Challenge has no cooldown banner
+  if(m==="challenge"){
+    stopCooldownTimer();
+    document.getElementById("cdBanner").classList.remove("show");
+  }
+  // Reset game for new mode
+  gameOver=false;guesses=[];results=[];
+  buf="";keyState={};isAnimating=false;answer="";
+  clearToasts();
+  document.getElementById("shareRow").classList.remove("show");
+  renderGrid();buildKeyboard();
+  // Check challenge already played
+  if(m==="challenge"&&hasPlayedChallenge()){
+    toast(t("tAlreadyPlayed"),"ok",6000);
+    return;
+  }
+  if(m==="practice") checkCooldown();
+  if(getRemainingMs()===0) await fetchAnswer();
+}
+
+async function switchLang(l){
+  lang=l;
+  document.getElementById("btnEn").classList.toggle("active",l==="en");
+  document.getElementById("btnMs").classList.toggle("active",l==="ms");
+  applyLang();refreshMini();
+
+  gameOver=false;guesses=[];results=[];
+  buf="";keyState={};isAnimating=false;answer="";
+  clearToasts();
+  document.getElementById("shareRow").classList.remove("show");
+  renderGrid();buildKeyboard();
+
+  if(mode==="challenge"&&hasPlayedChallenge()){
+    toast(t("tAlreadyPlayed"),"ok",6000);return;
+  }
+  const rem=getRemainingMs();
+  if(mode==="practice"&&rem>0){
+    checkCooldown();
+    toast(lang==="en"
+      ?`⏳ Cooldown active. Wait ${fmtMs(rem)}.`
+      :`⏳ Masa rehat aktif. Tunggu ${fmtMs(rem)}.`,"err",4000);
+  }else{
+    stopCooldownTimer();
+    document.getElementById("cdBanner").classList.remove("show");
+    await fetchAnswer();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   MODAL HELPERS
+═══════════════════════════════════════════════════════ */
+const openModal =id=>document.getElementById(id).classList.add("open");
+const closeModal=id=>document.getElementById(id).classList.remove("open");
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+window.addEventListener("load",async()=>{
+  // ── 1. Apply UI text & build components ──────────────
+  applyLang();
+  buildKeyboard();
+  refreshMini();
+  renderGrid();          // Show empty tiles immediately — don't wait for network
+
+  // ── 2. Name entry ─────────────────────────────────────
+  checkFirstVisit();
+  document.getElementById("nameSubmit").addEventListener("click",submitName);
+
+  // Rename modal — click name chip to open
+  document.getElementById("tbPlayer").addEventListener("click",openRenameModal);
+  document.getElementById("renameX").addEventListener("click",()=>closeModal("renameModal"));
+  document.getElementById("renameCancel").addEventListener("click",()=>closeModal("renameModal"));
+  document.getElementById("renameModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeModal("renameModal");});
+  document.getElementById("renameInput").addEventListener("keydown",e=>{
+    e.stopPropagation();
+    if(e.key==="Enter"){e.preventDefault();saveName();}
+  });
+
+  // ── 3. Wire ALL button events (before any async) ──────
+  //    Buttons must respond even while fetchAnswer is running
+  document.getElementById("newGameBtn").addEventListener("click",resetGame);
+  document.getElementById("btnEn").addEventListener("click",()=>switchLang("en"));
+  document.getElementById("btnMs").addEventListener("click",()=>switchLang("ms"));
+  document.getElementById("btnChallenge").addEventListener("click",()=>switchMode("challenge"));
+  document.getElementById("btnPractice").addEventListener("click",()=>switchMode("practice"));
+  document.getElementById("shareBtn").addEventListener("click",openShareModal);
+
+  // How-to
+  const oh=()=>openModal("howModal");
+  document.getElementById("helpBtn").addEventListener("click",oh);
+  document.getElementById("helpBtnH").addEventListener("click",oh);
+  document.getElementById("howX").addEventListener("click",()=>closeModal("howModal"));
+  document.getElementById("howOk").addEventListener("click",()=>closeModal("howModal"));
+  document.getElementById("howModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeModal("howModal");});
+
+  // Stats
+  document.getElementById("statsBtnH").addEventListener("click",openStats);
+  document.getElementById("statsX").addEventListener("click",()=>closeModal("statsModal"));
+  document.getElementById("statsOk").addEventListener("click",()=>closeModal("statsModal"));
+  document.getElementById("statsModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeModal("statsModal");});
+  document.getElementById("stEn").addEventListener("click",()=>buildStats("en"));
+  document.getElementById("stMs").addEventListener("click",()=>buildStats("ms"));
+  document.getElementById("shareInStats").addEventListener("click",openShareModal);
+
+  // Share modal
+  document.getElementById("shareMX").addEventListener("click",()=>closeModal("shareModal"));
+  document.getElementById("shareMClose").addEventListener("click",()=>closeModal("shareModal"));
+  document.getElementById("shareMCopy").addEventListener("click",copyToClipboard);
+  document.getElementById("shareMNative").addEventListener("click",nativeShare);
+  document.getElementById("shareModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeModal("shareModal");});
+
+  // ── 4. Input — always use custom keyboard; also support physical keys ──
+  window.addEventListener("keydown", onPhysKey);
+
+  // ── 5. Cooldown check then start game ─────────────────
+  checkCooldown();
+  // Set initial mode button labels
+  document.getElementById("btnChallenge").textContent = t("modeChallenge");
+  document.getElementById("btnPractice").textContent  = t("modePractice");
+
+  if(mode==="challenge"&&hasPlayedChallenge()){
+    renderGrid();
+    toast(t("tAlreadyPlayed"),"ok",6000);
+    document.getElementById("newGameBtn").textContent=t("btnNew");
+  }else if(getRemainingMs()===0){
+    await resetGame();
+  }else{
+    document.getElementById("newGameBtn").textContent=t("btnNew");
+  }
+});
+</script>
 </body>
 </html>
