@@ -10,6 +10,9 @@
 <title>TEKAWORD • MY Edu Hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+<!-- Firebase compat SDK (works with regular scripts, no type=module needed) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
 /* ── kid.css variables ──────────────────────────────────── */
 :root{
@@ -605,7 +608,7 @@ button{font-family:inherit;cursor:pointer;}
   </div>
 </div>
 
-<script type="module">
+<script>
 /* ═══════════════════════════════════════════════════════
    TRANSLATIONS
 ═══════════════════════════════════════════════════════ */
@@ -1171,20 +1174,24 @@ async function fetchEnAnswer(){
 }
 
 /* ═══════════════════════════════════════════════════════
-   FIREBASE — daily word
+   FIREBASE — daily word (compat SDK loaded in <head>)
 ═══════════════════════════════════════════════════════ */
-import{initializeApp}   from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import{getFirestore,doc,getDoc} from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-const _fbApp = initializeApp({
-  apiKey:"AIzaSyAAsrLp1d0SAapzWy_v5HWKiFNrIcZhLUQ",
-  authDomain:"bijak-tekaword.firebaseapp.com",
-  projectId:"bijak-tekaword",
-  storageBucket:"bijak-tekaword.firebasestorage.app",
-  messagingSenderId:"600008465379",
-  appId:"1:600008465379:web:3bf800fc10d048acc6ded6"
-});
-const _db = getFirestore(_fbApp);
+let _db = null;
+function initFirebase(){
+  try{
+    if(!firebase.apps.length){
+      firebase.initializeApp({
+        apiKey:"AIzaSyAAsrLp1d0SAapzWy_v5HWKiFNrIcZhLUQ",
+        authDomain:"bijak-tekaword.firebaseapp.com",
+        projectId:"bijak-tekaword",
+        storageBucket:"bijak-tekaword.firebasestorage.app",
+        messagingSenderId:"600008465379",
+        appId:"1:600008465379:web:3bf800fc10d048acc6ded6"
+      });
+    }
+    _db = firebase.firestore();
+  }catch(e){ console.warn("Firebase init failed:",e); }
+}
 
 /* MYT date key — same for all users worldwide */
 function mytDate(){
@@ -1199,14 +1206,15 @@ function dayNumber(){
 }
 
 async function fetchDailyWord(l){
+  if(!_db)return null;
   try{
-    const snap=await getDoc(doc(_db,"tekaword","daily",mytDate(),"words"));
-    if(snap.exists()){
+    const snap=await _db.doc(`tekaword/daily/${mytDate()}/words`).get();
+    if(snap.exists){
       const w=(snap.data()[l]||"").toLowerCase().trim();
       if(w.length===5&&/^[a-z]{5}$/.test(w)) return w;
     }
   }catch(e){console.warn("Firebase fetch failed:",e);}
-  return null; // null = no word set today
+  return null;
 }
 
 /* Seeded fallback — same date = same word, no server needed */
@@ -1662,6 +1670,9 @@ const closeModal=id=>document.getElementById(id).classList.remove("open");
    INIT
 ═══════════════════════════════════════════════════════ */
 window.addEventListener("load",async()=>{
+  // ── 0. Init Firebase ──────────────────────────────────
+  initFirebase();
+
   // ── 1. Apply UI text & build components ──────────────
   applyLang();
   buildKeyboard();
