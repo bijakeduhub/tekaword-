@@ -172,6 +172,40 @@ button{font-family:inherit;cursor:pointer;}
 
 /* ── MOBILE INPUT BAR ───────────────────────────────────── */
 /* Replaces ghost input — visible and 100% reliable on Android */
+/* ── ACHIEVEMENT CARD (Challenge already played) ────────── */
+.ach-card{
+  width:100%;background:rgba(255,255,255,.12);
+  backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);
+  border-radius:20px;padding:18px 20px;text-align:center;
+  animation:slideUp .35s ease;
+}
+.ach-done{
+  font-family:'Poppins',sans-serif;font-weight:900;
+  font-size:1rem;color:white;margin-bottom:4px;
+}
+.ach-sub{
+  font-size:.72rem;color:rgba(255,255,255,.65);margin-bottom:14px;
+}
+.ach-grid{
+  font-family:'Courier New',monospace;font-size:1.4rem;
+  line-height:1.8;letter-spacing:2px;margin-bottom:12px;color:white;
+}
+.ach-score{
+  font-family:'Poppins',sans-serif;font-weight:900;
+  font-size:1.3rem;color:var(--gold-b);margin-bottom:4px;
+}
+.ach-personal{
+  font-size:.78rem;color:rgba(255,255,255,.8);font-style:italic;
+  margin-bottom:14px;
+}
+.btn-practice{
+  background:linear-gradient(135deg,#28a745,#1e7e34);
+  color:white;border:none;padding:11px 24px;border-radius:28px;
+  font-family:'Nunito',sans-serif;font-weight:900;font-size:.88rem;
+  box-shadow:0 4px 0 #155724;transition:all .12s;cursor:pointer;
+}
+.btn-practice:active{transform:translateY(2px);box-shadow:0 2px 0 #155724;}
+
 /* ── BUTTONS ────────────────────────────────────────────── */
 .btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
 .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-b));
@@ -254,6 +288,14 @@ button{font-family:inherit;cursor:pointer;}
 .how-rule-text b.y{color:var(--pres);font-weight:900;}   /* 🟧 orange */
 .how-rule-text b.a{color:var(--abs); font-weight:900;}
 .how-div{border:none;border-top:1px solid var(--border);margin:14px 0;}
+
+.mode-section{margin-bottom:8px;}
+.mode-section-title{
+  font-family:'Poppins',sans-serif;font-weight:900;font-size:.85rem;
+  color:var(--txt);margin-bottom:10px;padding:6px 10px;
+  background:var(--bg-chip);border-radius:10px;display:inline-block;
+}
+.mode-divider{height:1px;background:var(--border);margin:14px 0;}
 
 /* ── STATS MODAL ────────────────────────────────────────── */
 .st-tabs{display:flex;background:var(--bg-chip);border-radius:12px;padding:4px;gap:4px;margin-bottom:16px;}
@@ -493,7 +535,17 @@ button{font-family:inherit;cursor:pointer;}
 
   <div class="grid" id="grid"></div>
 
-  <div class="legend">
+  <!-- Achievement card — shown when challenge already completed today -->
+  <div id="achCard" style="display:none" class="ach-card">
+    <div class="ach-done"  id="achDone"></div>
+    <div class="ach-sub"   id="achSub"></div>
+    <div class="ach-grid"  id="achGrid"></div>
+    <div class="ach-score" id="achScore"></div>
+    <div class="ach-personal" id="achPersonal"></div>
+    <button class="btn-practice" onclick="switchMode('practice')" id="achPracticeBtn"></button>
+  </div>
+
+  <div class="legend" id="legend">
     <div class="legend-item"><div class="legend-dot" style="background:var(--corr)"></div><span id="legC"></span></div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--pres)"></div><span id="legP"></span></div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--abs)"></div> <span id="legA"></span></div>
@@ -501,7 +553,7 @@ button{font-family:inherit;cursor:pointer;}
 
   <div class="keyboard" id="keyboard"></div>
 
-  <div class="btn-row">
+  <div class="btn-row" id="btnRow">
     <button class="btn-gold"  id="newGameBtn"></button>
     <button class="btn-ghost" id="helpBtn"></button>
   </div>
@@ -529,26 +581,17 @@ button{font-family:inherit;cursor:pointer;}
     <div class="m-body">
       <div class="how-desc" id="howIntro"></div>
       <hr class="how-div">
-      <div class="how-row">
-        <div class="tile correct">P</div><div class="tile absent">A</div>
-        <div class="tile absent">N</div><div class="tile absent">A</div><div class="tile absent">H</div>
-      </div>
+      <div class="how-row" id="howRow1"></div>
       <div class="how-rule">
         <div class="how-rule-dot" style="background:var(--corr)"></div>
         <div class="how-rule-text" id="howG"></div>
       </div>
-      <div class="how-row">
-        <div class="tile absent">M</div><div class="tile present">A</div>
-        <div class="tile absent">K</div><div class="tile absent">A</div><div class="tile absent">N</div>
-      </div>
+      <div class="how-row" id="howRow2"></div>
       <div class="how-rule">
         <div class="how-rule-dot" style="background:var(--pres)"></div>
         <div class="how-rule-text" id="howY"></div>
       </div>
-      <div class="how-row">
-        <div class="tile absent">T</div><div class="tile absent">I</div>
-        <div class="tile absent">D</div><div class="tile absent">U</div><div class="tile absent">R</div>
-      </div>
+      <div class="how-row" id="howRow3"></div>
       <div class="how-rule">
         <div class="how-rule-dot" style="background:var(--abs)"></div>
         <div class="how-rule-text" id="howGr"></div>
@@ -563,24 +606,48 @@ button{font-family:inherit;cursor:pointer;}
   <div class="modal-box">
     <div class="m-hdr"><div class="m-title" id="statsTtl"></div><button class="m-close" id="statsX">✕</button></div>
     <div class="m-body">
+      <!-- EN / BM tabs -->
       <div class="st-tabs">
         <button class="st-tab active" id="stEn">🇬🇧 English</button>
         <button class="st-tab"        id="stMs">🇲🇾 Melayu</button>
       </div>
-      <div class="sm-stats">
-        <div class="sm-s"><div class="sm-v" id="smP">0</div> <div class="sm-l" id="smPl"></div></div>
-        <div class="sm-s"><div class="sm-v" id="smW">0%</div><div class="sm-l" id="smWl"></div></div>
-        <div class="sm-s"><div class="sm-v" id="smS">0</div> <div class="sm-l" id="smSl"></div></div>
-        <div class="sm-s"><div class="sm-v" id="smB">0</div> <div class="sm-l" id="smBl"></div></div>
+
+      <!-- CHALLENGE section -->
+      <div class="mode-section">
+        <div class="mode-section-title" id="stChTitle">🏆 Challenge</div>
+        <div class="sm-stats" id="smChStats">
+          <div class="sm-s"><div class="sm-v" id="smChP">0</div><div class="sm-l" id="smChPl"></div></div>
+          <div class="sm-s"><div class="sm-v" id="smChW">0%</div><div class="sm-l" id="smChWl"></div></div>
+          <div class="sm-s"><div class="sm-v" id="smChS">0</div><div class="sm-l" id="smChSl"></div></div>
+          <div class="sm-s"><div class="sm-v" id="smChB">0</div><div class="sm-l" id="smChBl"></div></div>
+        </div>
+        <div class="dist-ttl" id="distChTtl"></div>
+        <div id="distChBox"></div>
       </div>
-      <div class="dist-ttl" id="distTtl"></div>
-      <div id="distBox"></div>
+
+      <div class="mode-divider"></div>
+
+      <!-- PRACTICE section -->
+      <div class="mode-section">
+        <div class="mode-section-title" id="stPrTitle">🎯 Practice</div>
+        <div class="sm-stats" id="smPrStats">
+          <div class="sm-s"><div class="sm-v" id="smPrP">0</div><div class="sm-l" id="smPrPl"></div></div>
+          <div class="sm-s"><div class="sm-v" id="smPrW">0%</div><div class="sm-l" id="smPrWl"></div></div>
+          <div class="sm-s"><div class="sm-v" id="smPrS">0</div><div class="sm-l" id="smPrSl"></div></div>
+          <div class="sm-s"><div class="sm-v" id="smPrB">0</div><div class="sm-l" id="smPrBl"></div></div>
+        </div>
+        <div class="dist-ttl" id="distPrTtl"></div>
+        <div id="distPrBox"></div>
+      </div>
+
+      <!-- Last game -->
       <div id="lgCard" style="display:none" class="lg-card">
-        <div class="lg-lbl" id="lgLbl"></div>
-        <div class="lg-res" id="lgRes"></div>
-        <div class="lg-ans" id="lgAns"></div>
+        <div class="lg-lbl"  id="lgLbl"></div>
+        <div class="lg-res"  id="lgRes"></div>
+        <div class="lg-ans"  id="lgAns"></div>
         <div class="emoji-prev" id="emojiPrev" style="display:none"></div>
       </div>
+
       <div class="m-btn-row">
         <button class="m-btn gold"    id="shareInStats"></button>
         <button class="m-btn primary" id="statsOk"></button>
@@ -622,22 +689,33 @@ en:{
   tDailyLoad:"⏳ Getting today's word…",
   tDailyReady:"✅ Daily challenge ready! 6 tries.",
   tPracticeReady:"✅ Practice word ready! 6 tries.",
-  tAlreadyPlayed:"✅ Already played today! Come back tomorrow.",
+  tAlreadyPlayed:"✅ Already played today! Try Practice mode 🎯",
+  achDone:"You've completed today's challenge!",
+  achSub:"Come back tomorrow for a new word.",
+  achTryPractice:"🎯 Try Practice Mode",
   tNoWordSet:"📅 No word set today — using auto word.",
   shareChallenge: n=>`🏆 Daily Challenge #${n}`,
+  sharePersonWon: (name,n)=>name?`${name} nailed it in just ${n} ${n===1?'try':'tries'}! 🎉`:`Solved in ${n} ${n===1?'try':'tries'}! 🎉`,
+  sharePersonLost: name=>name?`${name} will crack it next time! 💪`:`Better luck next time! 💪`,
   sharePractice:"🎯 Practice",
   sPl:"Played", sWl:"Win %", sStl:"Streak", sBel:"Best",
   lC:"Correct position 🟦", lP:"Wrong position 🟧", lA:"Not in word ⬛",
   btnNew:"🔄 New Game", btnHelp:"❓ How to Play", btnShare:"📤 Share Result",
-  footer:"MY Edu Hub © TEKAWORD | tekaword.bijak.live",
+  footer:"MY Edu Hub © TEKAWORD | bijak.live/tekaword",
   howTtl:"🎮 How to Play TEKAWORD",
   howI:"Guess the <strong>5-letter</strong> word in <strong>6 tries</strong>. Every guess must be a real word. Press <strong>⏎ ENTER</strong> to submit.",
   howG:"<b class='g'>🟦 Blue</b> — Correct letter, correct position.",
   howY:"<b class='y'>🟧 Orange</b> — Letter is in the word but wrong position.",
   howGr:"<b class='a'>⬛ Black</b> — Letter is not in the word at all.",
   howOk:"Got it!",
+  // Example words for how-to modal
+  howEx:[["S","T","O","N","E"],["C","R","A","N","E"],["T","I","G","E","R"]],
+  // Row 1: S correct, rest absent | Row 2: A present (pos1), rest absent | Row 3: all absent
+  howEx1:[1,0,0,0,0], howEx2:[0,1,0,0,0], howEx3:[0,0,0,0,0],
   statsTtl:"📊 Statistics",
   smPl:"Played", smWl:"Win %", smSl:"Streak", smBl:"Best",
+  noGCh:"No challenge games yet!",
+  noGPr:"No practice games yet!",
   distTtl:"GUESS DISTRIBUTION",
   noG:"No games played yet!",
   lgLbl:"LAST GAME", lgWon:n=>`Won in ${n} ${n===1?"guess":"guesses"} ✅`, lgLost:"Not solved ❌",
@@ -687,22 +765,32 @@ ms:{
   tDailyLoad:"⏳ Mendapat perkataan hari ini…",
   tDailyReady:"✅ Cabaran harian sedia! 6 cubaan.",
   tPracticeReady:"✅ Perkataan latihan sedia! 6 cubaan.",
-  tAlreadyPlayed:"✅ Dah main hari ini! Datang semula esok.",
+  tAlreadyPlayed:"✅ Dah main hari ni. Boleh cuba mode latihan 🎯",
+  achDone:"Anda dah selesai cabaran hari ini!",
+  achSub:"Datang semula esok untuk perkataan baru.",
+  achTryPractice:"🎯 Cuba Mode Latihan",
   tNoWordSet:"📅 Tiada perkataan hari ini — guna perkataan auto.",
   shareChallenge: n=>`🏆 Cabaran Harian #${n}`,
+  sharePersonWon: (name,n)=>name?`${name} berjaya dalam ${n} cubaan sahaja! 🎉`:`Berjaya dalam ${n} cubaan! 🎉`,
+  sharePersonLost: name=>name?`${name} akan cuba lagi! 💪`:`Cuba lagi esok! 💪`,
   sharePractice:"🎯 Latihan",
   sPl:"Main", sWl:"Menang", sStl:"Berturut", sBel:"Terbaik",
   lC:"Kedudukan betul 🟦", lP:"Salah kedudukan 🟧", lA:"Tiada dalam perkataan ⬛",
   btnNew:"🔄 Permainan Baru", btnHelp:"❓ Cara Main", btnShare:"📤 Kongsi",
-  footer:"MY Edu Hub © TEKAWORD | tekaword.bijak.live",
+  footer:"MY Edu Hub © TEKAWORD | bijak.live/tekaword",
   howTtl:"🎮 Cara Main TEKAWORD",
   howI:"Teka perkataan <strong>5 huruf</strong> dalam <strong>6 cubaan</strong>. Setiap teka mesti perkataan sah. Tekan <strong>⏎ ENTER</strong> untuk hantar.",
   howG:"<b class='g'>🟦 Biru</b> — Huruf betul & kedudukan tepat.",
   howY:"<b class='y'>🟧 Jingga</b> — Huruf ada dalam perkataan, tapi salah kedudukan.",
   howGr:"<b class='a'>⬛ Hitam</b> — Huruf tidak ada dalam perkataan langsung.",
   howOk:"Faham!",
+  // Example words for how-to modal
+  howEx:[["P","A","N","A","H"],["M","A","K","A","N"],["T","I","D","U","R"]],
+  howEx1:[1,0,0,0,0], howEx2:[0,1,0,0,0], howEx3:[0,0,0,0,0],
   statsTtl:"📊 Statistik",
   smPl:"Main", smWl:"Menang", smSl:"Berturut", smBl:"Terbaik",
+  noGCh:"Belum ada permainan cabaran!",
+  noGPr:"Belum ada permainan latihan!",
   distTtl:"TABURAN TEKA",
   noG:"Belum ada permainan!",
   lgLbl:"PERMAINAN LEPAS", lgWon:n=>`Menang dalam ${n} teka ✅`, lgLost:"Tidak berjaya ❌",
@@ -745,6 +833,27 @@ ms:{
 }};
 const t=k=>T[lang][k]??T.en[k]??k;
 
+/* Build how-to modal example tile rows based on current language */
+function buildHowRows(){
+  const ex = T[lang].howEx||[["P","A","N","A","H"],["M","A","K","A","N"],["T","I","D","U","R"]];
+  // Row1: first letter correct, rest absent
+  // Row2: second letter present, rest absent
+  // Row3: all absent
+  const configs = [
+    [{cls:"correct"},{cls:"absent"},{cls:"absent"},{cls:"absent"},{cls:"absent"}],
+    [{cls:"absent"},{cls:"present"},{cls:"absent"},{cls:"absent"},{cls:"absent"}],
+    [{cls:"absent"},{cls:"absent"},{cls:"absent"},{cls:"absent"},{cls:"absent"}]
+  ];
+  [1,2,3].forEach(n=>{
+    const row = document.getElementById(`howRow${n}`);
+    if(!row)return;
+    const word=ex[n-1], cfg=configs[n-1];
+    row.innerHTML=word.map((l,i)=>
+      `<div class="tile ${cfg[i].cls}">${l}</div>`
+    ).join("");
+  });
+}
+
 function applyLang(){
   const en=lang==="en";
   document.documentElement.lang=en?"en":"ms";
@@ -774,6 +883,7 @@ function applyLang(){
   document.getElementById("howY").innerHTML         = t("howY");
   document.getElementById("howGr").innerHTML        = t("howGr");
   document.getElementById("howOk").textContent      = t("howOk");
+  buildHowRows();
   document.getElementById("statsTtl").textContent   = t("statsTtl");
   document.getElementById("lgLbl").textContent      = t("lgLbl");
   document.getElementById("cdTitle").textContent    = t("cdTitle");
@@ -811,7 +921,20 @@ function getRemainingMs(){
 /* Challenge — played today check */
 function challengeKey(){return `tw_challenge_${lang}_${mytDate()}`;}
 function hasPlayedChallenge(){return !!localStorage.getItem(challengeKey());}
-function markChallengePlayedToday(){localStorage.setItem(challengeKey(),"1");}
+function markChallengePlayedToday(){
+  const won  = guesses.length>0&&guesses[guesses.length-1]===answer;
+  const score= won?guesses.length:"X";
+  localStorage.setItem(challengeKey(), JSON.stringify({
+    won, score,
+    guesses: guesses.length,
+    emojiGrid: buildEmojiGrid(),
+    name: getPlayerName()
+  }));
+}
+function getChallengeResult(){
+  try{ return JSON.parse(localStorage.getItem(challengeKey())||"null"); }
+  catch{ return null; }
+}
 function fmtMs(ms){
   const totalSec=Math.ceil(ms/1000);
   const h=Math.floor(totalSec/3600);
@@ -866,86 +989,128 @@ function saveStats(s,l=lang){
   try{localStorage.setItem(`tw_${l}`,JSON.stringify(s));}catch{}
 }
 function refreshMini(){
-  const s=getStats();
+  const s=getModeStats(mode,lang);
   document.getElementById("sP").textContent  = s.played;
   document.getElementById("sW").textContent  = s.played?Math.round(s.wins/s.played*100)+"%":"0%";
   document.getElementById("sSt").textContent = s.streak;
   document.getElementById("sBe").textContent = s.best;
 }
 function recordResult(won){
-  if(mode==="challenge"){
-    markChallengePlayedToday();
-    // Save challenge stats separately: tw_ch_en / tw_ch_ms
-    const sk=`tw_ch_${lang}`;
-    try{
-      const s=JSON.parse(localStorage.getItem(sk)||"{}");
-      s.played=(s.played||0)+1;
-      if(won){s.wins=(s.wins||0)+1;s.streak=(s.streak||0)+1;s.best=Math.max(s.best||0,s.streak);
-        if(!s.dist||s.dist.length!==6)s.dist=Array(6).fill(0);
-        s.dist[Math.min(guesses.length-1,5)]++;
-      }else s.streak=0;
-      s.lastGame={won,guesses:guesses.length,answer};
-      localStorage.setItem(sk,JSON.stringify(s));
-    }catch{}
-  }
-  const s=getStats();s.played++;
-  if(won){s.wins++;s.streak++;s.best=Math.max(s.best,s.streak);
-    if(s.dist.length!==6)s.dist=Array(6).fill(0);
-    s.dist[Math.min(guesses.length-1,5)]++;
-  }else s.streak=0;
-  s.lastGame={won,guesses:guesses.length,answer,mode};
-  saveStats(s);refreshMini();
+  // Save to mode-specific key: tw_ch_en / tw_ch_ms / tw_pr_en / tw_pr_ms
+  const sk = mode==="challenge" ? `tw_ch_${lang}` : `tw_pr_${lang}`;
+  try{
+    const s=JSON.parse(localStorage.getItem(sk)||"{}");
+    s.played=(s.played||0)+1;
+    if(won){
+      s.wins=(s.wins||0)+1;s.streak=(s.streak||0)+1;s.best=Math.max(s.best||0,s.streak);
+      if(!s.dist||s.dist.length!==6)s.dist=Array(6).fill(0);
+      s.dist[Math.min(guesses.length-1,5)]++;
+    }else s.streak=0;
+    s.lastGame={won,guesses:guesses.length,answer};
+    localStorage.setItem(sk,JSON.stringify(s));
+  }catch{}
+
+  if(mode==="challenge") markChallengePlayedToday();
+  refreshMini();
 }
 
 /* ── Stats modal ─────────────────────────────────────── */
 let viewL=lang;
-function buildStats(vl=viewL){
-  viewL=vl;
-  document.getElementById("stEn").classList.toggle("active",vl==="en");
-  document.getElementById("stMs").classList.toggle("active",vl==="ms");
-  const s=getStats(vl), dl=T[vl];
-
-  document.getElementById("smP").textContent  = s.played;
-  document.getElementById("smW").textContent  = s.played?Math.round(s.wins/s.played*100)+"%":"0%";
-  document.getElementById("smS").textContent  = s.streak;
-  document.getElementById("smB").textContent  = s.best;
-  document.getElementById("smPl").textContent = dl.smPl;
-  document.getElementById("smWl").textContent = dl.smWl;
-  document.getElementById("smSl").textContent = dl.smSl;
-  document.getElementById("smBl").textContent = dl.smBl;
-  document.getElementById("distTtl").textContent = dl.distTtl;
-  document.getElementById("statsOk").textContent  = dl.stOk;
-  document.getElementById("shareInStats").textContent = dl.stShare;
-
+/* Build a distribution histogram HTML */
+function buildDistHtml(s, dl, isCurrent){
+  if(!s.played) return `<div class="no-game">${dl.noG||'No games yet!'}</div>`;
   const mx=Math.max(...s.dist,1), lg=s.lastGame;
   let h="";
-  if(!s.played){h=`<div class="no-game">${dl.noG}</div>`;}
-  else s.dist.forEach((c,i)=>{
+  s.dist.forEach((c,i)=>{
     const pct=Math.max(Math.round(c/mx*100),c>0?8:0);
-    const isCur=lg&&lg.won&&lg.guesses===(i+1);
-    const isL  =lg&&!lg.won&&(i+1)===MAX&&c>0;
+    const isCur=isCurrent&&lg&&lg.won&&lg.guesses===(i+1);
+    const isL  =isCurrent&&lg&&!lg.won&&(i+1)===MAX&&c>0;
     const cls  =isCur?"bc":isL?"bl":c>0?"bw":"";
     h+=`<div class="dist-row"><div class="dist-n">${i+1}</div>
       <div class="dist-track"><div class="dist-bar ${cls}" style="width:${pct}%">
         <span class="dist-ct">${c}</span></div></div></div>`;
   });
-  document.getElementById("distBox").innerHTML=h;
+  return h;
+}
 
+/* Get stats for specific mode+lang */
+function getModeStats(m, l){
+  const key = m==="challenge" ? `tw_ch_${l}` : `tw_pr_${l}`;
+  try{
+    const s=JSON.parse(localStorage.getItem(key)||"{}");
+    return{played:s.played||0,wins:s.wins||0,streak:s.streak||0,best:s.best||0,
+           dist:s.dist||Array(6).fill(0),lastGame:s.lastGame||null};
+  }catch{return{played:0,wins:0,streak:0,best:0,dist:Array(6).fill(0),lastGame:null};}
+}
+
+function buildStats(vl=viewL){
+  viewL=vl;
+  document.getElementById("stEn").classList.toggle("active",vl==="en");
+  document.getElementById("stMs").classList.toggle("active",vl==="ms");
+  const dl=T[vl];
+
+  document.getElementById("statsOk").textContent       = dl.stOk;
+  document.getElementById("shareInStats").textContent  = dl.stShare;
+
+  // ── CHALLENGE section ────────────────────────────────
+  const ch = getModeStats("challenge", vl);
+  document.getElementById("smChP").textContent  = ch.played;
+  document.getElementById("smChW").textContent  = ch.played?Math.round(ch.wins/ch.played*100)+"%":"0%";
+  document.getElementById("smChS").textContent  = ch.streak;
+  document.getElementById("smChB").textContent  = ch.best;
+  document.getElementById("smChPl").textContent = dl.smPl;
+  document.getElementById("smChWl").textContent = dl.smWl;
+  document.getElementById("smChSl").textContent = dl.smSl;
+  document.getElementById("smChBl").textContent = dl.smBl;
+  document.getElementById("distChTtl").textContent = dl.distTtl||"GUESS DISTRIBUTION";
+  document.getElementById("distChBox").innerHTML   = buildDistHtml(
+    {played:ch.played,dist:ch.dist,lastGame:ch.lastGame},
+    {noG:dl.noGCh||"No challenge games yet!"},
+    vl===lang&&mode==="challenge"
+  );
+
+  // ── PRACTICE section ─────────────────────────────────
+  const pr = getModeStats("practice", vl);
+  document.getElementById("smPrP").textContent  = pr.played;
+  document.getElementById("smPrW").textContent  = pr.played?Math.round(pr.wins/pr.played*100)+"%":"0%";
+  document.getElementById("smPrS").textContent  = pr.streak;
+  document.getElementById("smPrB").textContent  = pr.best;
+  document.getElementById("smPrPl").textContent = dl.smPl;
+  document.getElementById("smPrWl").textContent = dl.smWl;
+  document.getElementById("smPrSl").textContent = dl.smSl;
+  document.getElementById("smPrBl").textContent = dl.smBl;
+  document.getElementById("distPrTtl").textContent = dl.distTtl||"GUESS DISTRIBUTION";
+  document.getElementById("distPrBox").innerHTML   = buildDistHtml(
+    {played:pr.played,dist:pr.dist,lastGame:pr.lastGame},
+    {noG:dl.noGPr||"No practice games yet!"},
+    vl===lang&&mode==="practice"
+  );
+
+  // ── Last game ─────────────────────────────────────────
+  const currentModeStats = getModeStats(mode, vl);
+  const lg = currentModeStats.lastGame;
   const lgCard=document.getElementById("lgCard");
-  const ep=document.getElementById("emojiPrev");
-  if(lg){
+  const ep    =document.getElementById("emojiPrev");
+  if(lg&&vl===lang){
     const r=document.getElementById("lgRes");
     r.className="lg-res "+(lg.won?"won":"lost");
     r.textContent=lg.won?dl.lgWon(lg.guesses):dl.lgLost;
     document.getElementById("lgAns").textContent=lg.answer?.toUpperCase().split("").join(" ");
-    if(vl===lang&&gameOver&&results.length){
+    document.getElementById("lgLbl").textContent=dl.lgLbl;
+    // Show emoji grid from live game or challenge result
+    const achResult=getChallengeResult();
+    if(gameOver&&results.length){
       ep.textContent=buildEmojiGrid();ep.style.display="";
+    }else if(achResult&&mode==="challenge"){
+      ep.textContent=achResult.emojiGrid;ep.style.display="";
     }else ep.style.display="none";
     lgCard.style.display="";
   }else lgCard.style.display="none";
 
-  // Share only relevant for current game lang
-  document.getElementById("shareInStats").style.opacity=(vl===lang&&gameOver)?1:.4;
+  // Share button opacity
+  const achResult=getChallengeResult();
+  const canShare = (vl===lang)&&(gameOver||achResult);
+  document.getElementById("shareInStats").style.opacity=canShare?1:.4;
 }
 
 function openStats(){viewL=lang;buildStats(viewL);openModal("statsModal");}
@@ -960,19 +1125,32 @@ function buildEmojiGrid(){
 }
 
 function buildShareText(){
-  const won=guesses.length>0&&guesses[guesses.length-1]===answer;
-  const score=won?guesses.length:"X";
-  const lbl=t("shareLabel");
-  const url=t("shareUrl");
-  const grid=buildEmojiGrid();
-  const modeLbl=mode==="challenge"
+  // Use live game state, OR fall back to saved challenge result
+  const achResult = (!results.length && !gameOver) ? getChallengeResult() : null;
+  const won   = achResult ? achResult.won  : guesses.length>0&&guesses[guesses.length-1]===answer;
+  const score = achResult ? achResult.score: won?guesses.length:"X";
+  const n     = achResult ? achResult.guesses : guesses.length;
+  const grid  = achResult ? achResult.emojiGrid : buildEmojiGrid();
+  const name  = getPlayerName();
+  const lbl   = t("shareLabel");
+  const url   = t("shareUrl");
+
+  const modeLbl = mode==="challenge"
     ? t("shareChallenge")(dayNumber())
     : t("sharePractice");
-  return `TEKAWORD 🎓 MY Edu Hub\n${modeLbl} ${score}/${MAX} (${lbl})\n\n${grid}\n\n${url}`;
+
+  const personal = won
+    ? t("sharePersonWon")(name, n)
+    : t("sharePersonLost")(name);
+
+  return `TEKAWORD 🎓 MY Edu Hub\n${modeLbl} ${score}/${MAX} (${lbl})\n\n${grid}\n\n${personal}\n${url}`;
 }
 /* Opens share modal — content shown in foreground, not clipboard flash */
 function openShareModal(){
-  if(!gameOver||!results.length){toast(t("tGO"),"err");return;}
+  // Allow share from achievement card (challenge already played today)
+  const achResult = getChallengeResult();
+  const canShare  = gameOver||results.length||achResult;
+  if(!canShare){toast(t("tGO"),"err");return;}
   const text=buildShareText();
 
   // Populate modal
@@ -1145,8 +1323,8 @@ function toast(msg,type="",ms=2800){
 function clearToasts(){document.getElementById("toastWrap").innerHTML="";}
 
 /* ═══════════════════════════════════════════════════════
-   ENGLISH — random-words-api + Datamuse validation
-   Strict: exactly 5 lowercase a-z letters guaranteed
+/* ═══════════════════════════════════════════════════════
+   ENGLISH — local pool + JSON validation (no external API)
 ═══════════════════════════════════════════════════════ */
 const EN_FB=["crane","brain","stone","heart","light","apple","table","chair","house","money",
   "plant","water","earth","flame","cloud","storm","night","dream","peace","grace",
@@ -1155,22 +1333,33 @@ const EN_FB=["crane","brain","stone","heart","light","apple","table","chair","ho
   "chill","ember","delta","bloom","glare","shout","frost","spark","prune","dwarf",
   "groan","stomp","blaze","whirl","crisp","frond","plumb","scamp","trout","snore"];
 
-async function fetchEnAnswer(){
-  for(let i=0;i<8;i++){
-    try{
-      const ctrl=new AbortController();
-      setTimeout(()=>ctrl.abort(),3500);
-      const r=await fetch("https://random-words-api.vercel.app/word",{signal:ctrl.signal});
-      if(!r.ok)throw 0;
-      const d=await r.json();
-      if(Array.isArray(d)&&d[0]?.word){
-        const w=d[0].word.toLowerCase().trim();
-        // Strict 5-letter, a-z only
-        if(w.length===5&&/^[a-z]{5}$/.test(w))return w;
-      }
-    }catch{}
-  }
+/* EN answer for Practice — random from local pool */
+function getEnAnswer(){
   return EN_FB[Math.floor(Math.random()*EN_FB.length)];
+}
+
+/* EN validation — load JSON once, instant checks thereafter */
+let enValidSet=null;
+async function loadEnValid(){
+  if(enValidSet)return;
+  try{
+    const r=await fetch("https://raw.githubusercontent.com/bijakeduhub/tekaword-/main/data/en_valid.json");
+    if(!r.ok)throw 0;
+    enValidSet=new Set(await r.json());
+  }catch{
+    enValidSet=new Set(EN_FB); // fallback to local pool
+  }
+}
+async function isValidEn(word){
+  await loadEnValid();
+  if(enValidSet.has(word))return true;
+  // Datamuse as last resort for words not in our list
+  try{
+    const r=await fetch(`https://api.datamuse.com/words?sp=${word}&max=1`);
+    if(!r.ok)return true;
+    const d=await r.json();
+    return d.length>0&&d[0].word===word;
+  }catch{return true;}
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1506,9 +1695,54 @@ async function submitGuess(guess){
   return true;
 }
 
-function showPostGame(){
+/* Show achievement card after challenge completed / already played */
+function showChallengeAchievement(){
+  const result = getChallengeResult();
+  if(!result) return;
+
+  const won   = result.won;
+  const score = result.score;
+  const n     = result.guesses;
+  const name  = getPlayerName();
+
+  // Hide grid and keyboard — show achievement card instead
+  document.getElementById("grid").style.display    = "none";
+  document.getElementById("keyboard").style.display= "none";
+  document.getElementById("btnRow").style.display  = "none";
+  document.getElementById("legend").style.display  = "none";
+
+  // Populate achievement card
+  document.getElementById("achDone").textContent     = t("achDone");
+  document.getElementById("achSub").textContent      = t("achSub");
+  document.getElementById("achGrid").innerHTML       = result.emojiGrid.replace(/\n/g,"<br>");
+  document.getElementById("achScore").textContent    = `${score}/${MAX}`;
+  document.getElementById("achPersonal").textContent = won
+    ? t("sharePersonWon")(name, n)
+    : t("sharePersonLost")(name);
+  document.getElementById("achPracticeBtn").textContent = t("achTryPractice");
+  document.getElementById("achCard").style.display   = "";
+
+  // Show share button
   document.getElementById("shareRow").classList.add("show");
-  // No cooldown for either mode — Practice is unlimited, Challenge is daily
+}
+
+/* Restore normal view (Practice mode / new challenge) */
+function hideChallengeAchievement(){
+  document.getElementById("grid").style.display    = "";
+  document.getElementById("keyboard").style.display= "";
+  document.getElementById("btnRow").style.display  = "";
+  document.getElementById("legend").style.display  = "";
+  document.getElementById("achCard").style.display = "none";
+  document.getElementById("shareRow").classList.remove("show");
+}
+
+function showPostGame(){
+  if(mode==="challenge"){
+    markChallengePlayedToday();
+    setTimeout(()=>showChallengeAchievement(), 800);
+  }else{
+    document.getElementById("shareRow").classList.add("show");
+  }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1562,7 +1796,7 @@ async function fetchAnswer(){
     }else{
       // Practice — random local word
       w=lang==="en"
-        ? EN_FB[Math.floor(Math.random()*EN_FB.length)]
+        ? getEnAnswer()
         : MS_WORDS[Math.floor(Math.random()*MS_WORDS.length)];
     }
 
@@ -1575,9 +1809,6 @@ async function fetchAnswer(){
     const msg=mode==="challenge"?t("tDailyReady"):t("tPracticeReady");
     setTimeout(()=>toast(msg,"ok"),80);
 
-    // Preload BM validation in background
-    if(lang==="ms") loadBmValid();
-
   }catch(e){
     el.remove();toast("❌ Error. Try again.","err",6000);gameOver=true;
   }
@@ -1588,9 +1819,10 @@ async function fetchAnswer(){
    GAME FLOW
 ═══════════════════════════════════════════════════════ */
 async function resetGame(){
-  // Challenge — check if already played today
+  // Challenge — show achievement if already played today
   if(mode==="challenge"&&hasPlayedChallenge()){
-    toast(t("tAlreadyPlayed"),"ok",6000);
+    hideChallengeAchievement(); // reset first
+    showChallengeAchievement(); // then show result
     return;
   }
   // Practice — no cooldown, always allowed
@@ -1609,25 +1841,25 @@ async function switchMode(m){
   document.getElementById("btnChallenge").classList.toggle("active",m==="challenge");
   document.getElementById("btnPractice").classList.toggle("active",m==="practice");
   document.getElementById("btnPractice").classList.toggle("practice",m==="practice");
-  // Update subtitle
   document.getElementById("gameSub").textContent=
     m==="challenge"?t("subChallenge"):t("subPractice");
-  // Challenge has no cooldown banner
   if(m==="challenge"){
     stopCooldownTimer();
     document.getElementById("cdBanner").classList.remove("show");
   }
-  // Reset game for new mode
+  // Reset state
   gameOver=false;guesses=[];results=[];
   buf="";keyState={};isAnimating=false;answer="";
   clearToasts();
-  document.getElementById("shareRow").classList.remove("show");
-  renderGrid();buildKeyboard();
-  // Check challenge already played
+  hideChallengeAchievement(); // always restore grid view first
+
+  // Challenge already played today → show achievement
   if(m==="challenge"&&hasPlayedChallenge()){
-    toast(t("tAlreadyPlayed"),"ok",6000);
+    renderGrid();buildKeyboard();
+    showChallengeAchievement();
     return;
   }
+  renderGrid();buildKeyboard();
   if(m==="practice") checkCooldown();
   if(getRemainingMs()===0) await fetchAnswer();
 }
@@ -1644,8 +1876,11 @@ async function switchLang(l){
   document.getElementById("shareRow").classList.remove("show");
   renderGrid();buildKeyboard();
 
+  hideChallengeAchievement();
   if(mode==="challenge"&&hasPlayedChallenge()){
-    toast(t("tAlreadyPlayed"),"ok",6000);return;
+    renderGrid();buildKeyboard();
+    showChallengeAchievement();
+    return;
   }
   const rem=getRemainingMs();
   if(mode==="practice"&&rem>0){
@@ -1670,8 +1905,10 @@ const closeModal=id=>document.getElementById(id).classList.remove("open");
    INIT
 ═══════════════════════════════════════════════════════ */
 window.addEventListener("load",async()=>{
-  // ── 0. Init Firebase ──────────────────────────────────
+  // ── 0. Init Firebase + preload word lists ────────────
   initFirebase();
+  loadEnValid(); // preload EN validation in background
+  loadBmValid(); // preload BM validation in background
 
   // ── 1. Apply UI text & build components ──────────────
   applyLang();
@@ -1736,9 +1973,8 @@ window.addEventListener("load",async()=>{
   document.getElementById("btnPractice").textContent  = t("modePractice");
 
   if(mode==="challenge"&&hasPlayedChallenge()){
-    renderGrid();
-    toast(t("tAlreadyPlayed"),"ok",6000);
-    document.getElementById("newGameBtn").textContent=t("btnNew");
+    renderGrid();buildKeyboard();
+    showChallengeAchievement();
   }else if(getRemainingMs()===0){
     await resetGame();
   }else{
