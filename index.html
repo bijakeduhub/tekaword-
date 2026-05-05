@@ -1200,7 +1200,9 @@ function buildShareTextFor(l, m){
   if(m==="challenge"){
     const achR = getChResultFor(l);
     if(achR){
-      won=achR.won; score=achR.score; n=achR.guesses; grid=achR.emojiGrid;
+      won=achR.won; score=achR.score; n=achR.guesses;
+      // achR.emojiGrid might be empty for old saves — rebuild if live game matches
+      grid=achR.emojiGrid||(l===lang&&gameOver&&results.length?buildEmojiGrid():"");
     }else if(l===lang&&gameOver&&results.length){
       won=guesses[guesses.length-1]===answer;
       score=won?guesses.length:"X"; n=guesses.length; grid=buildEmojiGrid();
@@ -1209,7 +1211,9 @@ function buildShareTextFor(l, m){
     const pr=getModeStats("practice",l);
     const lg=pr.lastGame;
     if(!lg) return null;
-    won=lg.won; score=won?lg.guesses:"X"; n=lg.guesses; grid=lg.emojiGrid||"";
+    won=lg.won; score=won?lg.guesses:"X"; n=lg.guesses;
+    // Use saved emojiGrid; if missing & this is live game, build from results
+    grid=lg.emojiGrid||(l===lang&&gameOver&&results.length?buildEmojiGrid():"");
   }
 
   const modeLbl = m==="challenge"
@@ -1967,11 +1971,13 @@ async function switchLang(l){
   buf="";keyState={};isAnimating=false;answer="";
   clearToasts();
   document.getElementById("shareRow").classList.remove("show");
+
+  // hideChallengeAchievement FIRST — restores grid/keyboard visibility
+  // THEN renderGrid/buildKeyboard so they render while visible
+  hideChallengeAchievement();
   renderGrid();buildKeyboard();
 
-  hideChallengeAchievement();
   if(mode==="challenge"&&hasPlayedChallenge()){
-    renderGrid();buildKeyboard();
     showChallengeAchievement();
     return;
   }
@@ -2054,7 +2060,7 @@ window.addEventListener("load",async()=>{
   document.getElementById("statsOk").addEventListener("click",()=>closeModal("statsModal"));
   document.getElementById("statsModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeModal("statsModal");});
   document.getElementById("stEn").addEventListener("click",()=>buildStats("en",viewM));
-  document.getElementById("stMs").addEventListener("click",()=>buildStats(viewL,"challenge"===viewM?"challenge":"practice"));
+  document.getElementById("stMs").addEventListener("click",()=>buildStats("ms",viewM));
   document.getElementById("stModeChallenge").addEventListener("click",()=>buildStats(viewL,"challenge"));
   document.getElementById("stModePractice").addEventListener("click",()=>buildStats(viewL,"practice"));
   document.getElementById("shareInStats").addEventListener("click",shareFromStats);
