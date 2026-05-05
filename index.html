@@ -297,6 +297,20 @@ button{font-family:inherit;cursor:pointer;}
 }
 .mode-divider{height:1px;background:var(--border);margin:14px 0;}
 
+/* Mode toggle inside stats modal */
+.st-mode-tabs{
+  display:flex;background:var(--bg-chip);border-radius:12px;
+  padding:4px;gap:4px;margin-bottom:16px;
+}
+.st-mode-btn{
+  flex:1;padding:8px 0;border:none;border-radius:9px;
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:.82rem;
+  color:var(--txt-m);background:transparent;cursor:pointer;transition:all .2s;
+}
+.st-mode-btn.active{
+  background:white;color:var(--txt);box-shadow:0 2px 6px rgba(0,0,0,.1);
+}
+
 /* ── STATS MODAL ────────────────────────────────────────── */
 .st-tabs{display:flex;background:var(--bg-chip);border-radius:12px;padding:4px;gap:4px;margin-bottom:16px;}
 .st-tab{flex:1;padding:7px 0;border:none;border-radius:9px;
@@ -606,41 +620,32 @@ button{font-family:inherit;cursor:pointer;}
   <div class="modal-box">
     <div class="m-hdr"><div class="m-title" id="statsTtl"></div><button class="m-close" id="statsX">✕</button></div>
     <div class="m-body">
-      <!-- EN / BM tabs -->
+
+      <!-- Lang tabs (EN / BM) -->
       <div class="st-tabs">
         <button class="st-tab active" id="stEn">🇬🇧 English</button>
         <button class="st-tab"        id="stMs">🇲🇾 Melayu</button>
       </div>
 
-      <!-- CHALLENGE section -->
-      <div class="mode-section">
-        <div class="mode-section-title" id="stChTitle">🏆 Challenge</div>
-        <div class="sm-stats" id="smChStats">
-          <div class="sm-s"><div class="sm-v" id="smChP">0</div><div class="sm-l" id="smChPl"></div></div>
-          <div class="sm-s"><div class="sm-v" id="smChW">0%</div><div class="sm-l" id="smChWl"></div></div>
-          <div class="sm-s"><div class="sm-v" id="smChS">0</div><div class="sm-l" id="smChSl"></div></div>
-          <div class="sm-s"><div class="sm-v" id="smChB">0</div><div class="sm-l" id="smChBl"></div></div>
-        </div>
-        <div class="dist-ttl" id="distChTtl"></div>
-        <div id="distChBox"></div>
+      <!-- Mode toggle inside stats (Challenge / Practice) -->
+      <div class="st-mode-tabs">
+        <button class="st-mode-btn active" id="stModeChallenge"></button>
+        <button class="st-mode-btn"        id="stModePractice"></button>
       </div>
 
-      <div class="mode-divider"></div>
-
-      <!-- PRACTICE section -->
-      <div class="mode-section">
-        <div class="mode-section-title" id="stPrTitle">🎯 Practice</div>
-        <div class="sm-stats" id="smPrStats">
-          <div class="sm-s"><div class="sm-v" id="smPrP">0</div><div class="sm-l" id="smPrPl"></div></div>
-          <div class="sm-s"><div class="sm-v" id="smPrW">0%</div><div class="sm-l" id="smPrWl"></div></div>
-          <div class="sm-s"><div class="sm-v" id="smPrS">0</div><div class="sm-l" id="smPrSl"></div></div>
-          <div class="sm-s"><div class="sm-v" id="smPrB">0</div><div class="sm-l" id="smPrBl"></div></div>
-        </div>
-        <div class="dist-ttl" id="distPrTtl"></div>
-        <div id="distPrBox"></div>
+      <!-- Single stats block — content swaps per active mode+lang -->
+      <div class="sm-stats">
+        <div class="sm-s"><div class="sm-v" id="smStP">0</div> <div class="sm-l" id="smStPl"></div></div>
+        <div class="sm-s"><div class="sm-v" id="smStW">0%</div><div class="sm-l" id="smStWl"></div></div>
+        <div class="sm-s"><div class="sm-v" id="smStS">0</div> <div class="sm-l" id="smStSl"></div></div>
+        <div class="sm-s"><div class="sm-v" id="smStB">0</div> <div class="sm-l" id="smStBl"></div></div>
       </div>
 
-      <!-- Last game -->
+      <!-- Distribution -->
+      <div class="dist-ttl" id="distStTtl"></div>
+      <div id="distStBox"></div>
+
+      <!-- Last game for active mode+lang -->
       <div id="lgCard" style="display:none" class="lg-card">
         <div class="lg-lbl"  id="lgLbl"></div>
         <div class="lg-res"  id="lgRes"></div>
@@ -719,7 +724,9 @@ en:{
   distTtl:"GUESS DISTRIBUTION",
   noG:"No games played yet!",
   lgLbl:"LAST GAME", lgWon:n=>`Won in ${n} ${n===1?"guess":"guesses"} ✅`, lgLost:"Not solved ❌",
-  stOk:"Close", stShare:"📤 Share",
+  stOk:"Close",
+  stShareChallenge:"📤 Share Challenge",
+  stSharePractice:"📤 Share Practice",
   // Cooldown
   cdTitle:"Take a break!",
   cdSub:"New game available in:",
@@ -794,7 +801,9 @@ ms:{
   distTtl:"TABURAN TEKA",
   noG:"Belum ada permainan!",
   lgLbl:"PERMAINAN LEPAS", lgWon:n=>`Menang dalam ${n} teka ✅`, lgLost:"Tidak berjaya ❌",
-  stOk:"Tutup", stShare:"📤 Kongsi",
+  stOk:"Tutup",
+  stShareChallenge:"📤 Kongsi Cabaran",
+  stSharePractice:"📤 Kongsi Latihan",
   // Cooldown
   cdTitle:"Berehat sebentar!",
   cdSub:"Permainan baru tersedia dalam:",
@@ -935,6 +944,39 @@ function getChallengeResult(){
   try{ return JSON.parse(localStorage.getItem(challengeKey())||"null"); }
   catch{ return null; }
 }
+
+/* ── Game state persistence (Challenge only) ─────────── */
+function stateKey(){ return `tw_state_ch_${lang}_${mytDate()}`; }
+
+function saveGameState(){
+  if(mode!=="challenge")return;
+  try{
+    localStorage.setItem(stateKey(), JSON.stringify({
+      guesses, results, answer, keyState,
+      gameOver, buf: gameOver?"":buf
+    }));
+    // Also remember which lang the challenge was in
+    localStorage.setItem("tw_last_ch_lang", lang);
+  }catch{}
+}
+
+function loadGameState(){
+  try{
+    const s=JSON.parse(localStorage.getItem(stateKey())||"null");
+    if(!s||!s.answer||s.answer.length!==5) return false;
+    guesses  = s.guesses  ||[];
+    results  = s.results  ||[];
+    answer   = s.answer;
+    keyState = s.keyState ||{};
+    gameOver = s.gameOver ||false;
+    buf      = s.buf      ||"";
+    return true;
+  }catch{ return false; }
+}
+
+function clearGameState(){
+  try{ localStorage.removeItem(stateKey()); }catch{}
+}
 function fmtMs(ms){
   const totalSec=Math.ceil(ms/1000);
   const h=Math.floor(totalSec/3600);
@@ -1006,7 +1048,7 @@ function recordResult(won){
       if(!s.dist||s.dist.length!==6)s.dist=Array(6).fill(0);
       s.dist[Math.min(guesses.length-1,5)]++;
     }else s.streak=0;
-    s.lastGame={won,guesses:guesses.length,answer};
+    s.lastGame={won,guesses:guesses.length,answer,emojiGrid:buildEmojiGrid()};
     localStorage.setItem(sk,JSON.stringify(s));
   }catch{}
 
@@ -1016,6 +1058,7 @@ function recordResult(won){
 
 /* ── Stats modal ─────────────────────────────────────── */
 let viewL=lang;
+let viewM=mode; // active mode inside stats modal
 /* Build a distribution histogram HTML */
 function buildDistHtml(s, dl, isCurrent){
   if(!s.played) return `<div class="no-game">${dl.noG||'No games yet!'}</div>`;
@@ -1043,77 +1086,100 @@ function getModeStats(m, l){
   }catch{return{played:0,wins:0,streak:0,best:0,dist:Array(6).fill(0),lastGame:null};}
 }
 
-function buildStats(vl=viewL){
-  viewL=vl;
-  document.getElementById("stEn").classList.toggle("active",vl==="en");
-  document.getElementById("stMs").classList.toggle("active",vl==="ms");
+function buildStats(vl=viewL, vm=viewM){
+  viewL=vl; viewM=vm;
   const dl=T[vl];
 
-  document.getElementById("statsOk").textContent       = dl.stOk;
-  document.getElementById("shareInStats").textContent  = dl.stShare;
+  // ── Lang tabs ───────────────────────────────────────
+  document.getElementById("stEn").classList.toggle("active",vl==="en");
+  document.getElementById("stMs").classList.toggle("active",vl==="ms");
 
-  // ── CHALLENGE section ────────────────────────────────
-  const ch = getModeStats("challenge", vl);
-  document.getElementById("smChP").textContent  = ch.played;
-  document.getElementById("smChW").textContent  = ch.played?Math.round(ch.wins/ch.played*100)+"%":"0%";
-  document.getElementById("smChS").textContent  = ch.streak;
-  document.getElementById("smChB").textContent  = ch.best;
-  document.getElementById("smChPl").textContent = dl.smPl;
-  document.getElementById("smChWl").textContent = dl.smWl;
-  document.getElementById("smChSl").textContent = dl.smSl;
-  document.getElementById("smChBl").textContent = dl.smBl;
-  document.getElementById("distChTtl").textContent = dl.distTtl||"GUESS DISTRIBUTION";
-  document.getElementById("distChBox").innerHTML   = buildDistHtml(
-    {played:ch.played,dist:ch.dist,lastGame:ch.lastGame},
-    {noG:dl.noGCh||"No challenge games yet!"},
-    vl===lang&&mode==="challenge"
+  // ── Mode toggle inside stats ────────────────────────
+  document.getElementById("stModeChallenge").textContent = dl.modeChallenge||"🏆 Challenge";
+  document.getElementById("stModePractice").textContent  = dl.modePractice ||"🎯 Practice";
+  document.getElementById("stModeChallenge").classList.toggle("active",vm==="challenge");
+  document.getElementById("stModePractice").classList.toggle("active",vm==="practice");
+
+  // ── Stats for active mode+lang ──────────────────────
+  const s = getModeStats(vm, vl);
+  document.getElementById("smStP").textContent  = s.played;
+  document.getElementById("smStW").textContent  = s.played?Math.round(s.wins/s.played*100)+"%":"0%";
+  document.getElementById("smStS").textContent  = s.streak;
+  document.getElementById("smStB").textContent  = s.best;
+  document.getElementById("smStPl").textContent = dl.smPl;
+  document.getElementById("smStWl").textContent = dl.smWl;
+  document.getElementById("smStSl").textContent = dl.smSl;
+  document.getElementById("smStBl").textContent = dl.smBl;
+
+  // ── Distribution ────────────────────────────────────
+  const noGKey = vm==="challenge" ? (dl.noGCh||"No challenge games yet!") : (dl.noGPr||"No practice games yet!");
+  document.getElementById("distStTtl").textContent = dl.distTtl||"GUESS DISTRIBUTION";
+  const isCurrentCombo = (vl===lang && vm===mode);
+  document.getElementById("distStBox").innerHTML = buildDistHtml(
+    {played:s.played, dist:s.dist, lastGame:s.lastGame},
+    {noG: noGKey},
+    isCurrentCombo
   );
 
-  // ── PRACTICE section ─────────────────────────────────
-  const pr = getModeStats("practice", vl);
-  document.getElementById("smPrP").textContent  = pr.played;
-  document.getElementById("smPrW").textContent  = pr.played?Math.round(pr.wins/pr.played*100)+"%":"0%";
-  document.getElementById("smPrS").textContent  = pr.streak;
-  document.getElementById("smPrB").textContent  = pr.best;
-  document.getElementById("smPrPl").textContent = dl.smPl;
-  document.getElementById("smPrWl").textContent = dl.smWl;
-  document.getElementById("smPrSl").textContent = dl.smSl;
-  document.getElementById("smPrBl").textContent = dl.smBl;
-  document.getElementById("distPrTtl").textContent = dl.distTtl||"GUESS DISTRIBUTION";
-  document.getElementById("distPrBox").innerHTML   = buildDistHtml(
-    {played:pr.played,dist:pr.dist,lastGame:pr.lastGame},
-    {noG:dl.noGPr||"No practice games yet!"},
-    vl===lang&&mode==="practice"
-  );
+  // ── Last game ────────────────────────────────────────
+  const lgCard = document.getElementById("lgCard");
+  const ep     = document.getElementById("emojiPrev");
+  const lg     = s.lastGame;
 
-  // ── Last game ─────────────────────────────────────────
-  const currentModeStats = getModeStats(mode, vl);
-  const lg = currentModeStats.lastGame;
-  const lgCard=document.getElementById("lgCard");
-  const ep    =document.getElementById("emojiPrev");
-  if(lg&&vl===lang){
+  if(lg){
     const r=document.getElementById("lgRes");
     r.className="lg-res "+(lg.won?"won":"lost");
     r.textContent=lg.won?dl.lgWon(lg.guesses):dl.lgLost;
     document.getElementById("lgAns").textContent=lg.answer?.toUpperCase().split("").join(" ");
     document.getElementById("lgLbl").textContent=dl.lgLbl;
-    // Show emoji grid from live game or challenge result
-    const achResult=getChallengeResult();
-    if(gameOver&&results.length){
-      ep.textContent=buildEmojiGrid();ep.style.display="";
-    }else if(achResult&&mode==="challenge"){
-      ep.textContent=achResult.emojiGrid;ep.style.display="";
+
+    // Emoji grid: use live game > saved achResult > saved lastGame.emojiGrid
+    const achResult = vm==="challenge" ? getChResultFor(vl) : null;
+    if(isCurrentCombo && gameOver && results.length){
+      ep.textContent=buildEmojiGrid(); ep.style.display="";
+    }else if(achResult && achResult.emojiGrid){
+      ep.textContent=achResult.emojiGrid; ep.style.display="";
+    }else if(lg.emojiGrid){
+      ep.textContent=lg.emojiGrid; ep.style.display="";
     }else ep.style.display="none";
     lgCard.style.display="";
   }else lgCard.style.display="none";
 
-  // Share button opacity
-  const achResult=getChallengeResult();
-  const canShare = (vl===lang)&&(gameOver||achResult);
-  document.getElementById("shareInStats").style.opacity=canShare?1:.4;
+  // ── Share button ─────────────────────────────────────
+  // Text = share + mode in the active stats lang
+  const shareKey = vm==="challenge" ? "stShareChallenge" : "stSharePractice";
+  document.getElementById("shareInStats").textContent = dl[shareKey]||dl.stShare||"📤 Share";
+  document.getElementById("statsOk").textContent      = dl.stOk;
+
+  // Grey out if no result for this combo
+  const achR      = vm==="challenge" ? getChResultFor(vl) : null;
+  const hasResult = (isCurrentCombo && gameOver) || achR || lg;
+  document.getElementById("shareInStats").style.opacity = hasResult?1:.4;
+  document.getElementById("shareInStats").style.pointerEvents = hasResult?"":"none";
 }
 
-function openStats(){viewL=lang;buildStats(viewL);openModal("statsModal");}
+
+/* Get challenge result for any lang (not just current) */
+function getChResultFor(l){
+  try{ return JSON.parse(localStorage.getItem(`tw_challenge_${l}_${mytDate()}`)||"null"); }
+  catch{ return null; }
+}
+
+function openStats(){
+  viewL=lang; viewM=mode;
+  buildStats(viewL,viewM);
+  openModal("statsModal");
+}
+
+/* Share from stats modal — uses viewL + viewM (not current game state) */
+function shareFromStats(){
+  const btn=document.getElementById("shareInStats");
+  if(parseFloat(btn.style.opacity||1)<0.5){
+    toast(T[viewL].tGO||"No result to share","err");return;
+  }
+  const text=buildShareTextFor(viewL,viewM);
+  showShareModal(text);
+}
 
 /* ═══════════════════════════════════════════════════════
    SHARE
@@ -1124,55 +1190,81 @@ function buildEmojiGrid(){
   ).join("\n");
 }
 
-function buildShareText(){
-  // Use live game state, OR fall back to saved challenge result
-  const achResult = (!results.length && !gameOver) ? getChallengeResult() : null;
-  const won   = achResult ? achResult.won  : guesses.length>0&&guesses[guesses.length-1]===answer;
-  const score = achResult ? achResult.score: won?guesses.length:"X";
-  const n     = achResult ? achResult.guesses : guesses.length;
-  const grid  = achResult ? achResult.emojiGrid : buildEmojiGrid();
-  const name  = getPlayerName();
-  const lbl   = t("shareLabel");
-  const url   = t("shareUrl");
+/* Build share text for specific lang+mode — used by stats share button */
+function buildShareTextFor(l, m){
+  const dl  = T[l];
+  const url = dl.shareUrl||"tekaword.bijak.live";
+  const name= getPlayerName();
+  let won, score, n, grid;
 
-  const modeLbl = mode==="challenge"
-    ? t("shareChallenge")(dayNumber())
-    : t("sharePractice");
+  if(m==="challenge"){
+    const achR = getChResultFor(l);
+    if(achR){
+      won=achR.won; score=achR.score; n=achR.guesses; grid=achR.emojiGrid;
+    }else if(l===lang&&gameOver&&results.length){
+      won=guesses[guesses.length-1]===answer;
+      score=won?guesses.length:"X"; n=guesses.length; grid=buildEmojiGrid();
+    }else return null;
+  }else{
+    const pr=getModeStats("practice",l);
+    const lg=pr.lastGame;
+    if(!lg) return null;
+    won=lg.won; score=won?lg.guesses:"X"; n=lg.guesses; grid=lg.emojiGrid||"";
+  }
+
+  const modeLbl = m==="challenge"
+    ? dl.shareChallenge(dayNumber())
+    : dl.sharePractice;
 
   const personal = won
-    ? t("sharePersonWon")(name, n)
-    : t("sharePersonLost")(name);
+    ? dl.sharePersonWon(name,n)
+    : dl.sharePersonLost(name);
 
-  return `TEKAWORD 🎓 MY Edu Hub\n${modeLbl} ${score}/${MAX} (${lbl})\n\n${grid}\n\n${personal}\n${url}`;
+  return `TEKAWORD 🎓 MY Edu Hub\n${modeLbl} ${score}/${MAX} (${dl.shareLabel})\n\n${grid}\n\n${personal}\n${url}`;
 }
-/* Opens share modal — content shown in foreground, not clipboard flash */
-function openShareModal(){
-  // Allow share from achievement card (challenge already played today)
-  const achResult = getChallengeResult();
-  const canShare  = gameOver||results.length||achResult;
-  if(!canShare){toast(t("tGO"),"err");return;}
-  const text=buildShareText();
 
-  // Populate modal
-  document.getElementById("shareMTtl").textContent   = t("shareMTtl");
-  document.getElementById("shareMPreview").textContent= text;
-  document.getElementById("shareMCopy").textContent   = t("shareMCopy");
-  document.getElementById("shareMClose").textContent  = t("shareMClose");
+/* Build share text for current game */
+function buildShareText(){
+  const achResult = (!results.length&&!gameOver)?getChallengeResult():null;
+  if(!results.length&&!gameOver&&!achResult) return null;
+  return buildShareTextFor(lang,mode);
+}
 
-  // Show/hide native share button based on API availability
+/* Show share modal with given text */
+function showShareModal(text){
+  if(!text){toast(t("tGO"),"err");return;}
+  document.getElementById("shareMTtl").textContent    = t("shareMTtl")||"📤 Share Result";
+  document.getElementById("shareMPreview").textContent = text;
+  document.getElementById("shareMCopy").textContent   = t("shareMCopy")||"📋 Copy";
+  document.getElementById("shareMClose").textContent  = t("shareMClose")||"Close";
   const nBtn=document.getElementById("shareMNative");
-  nBtn.textContent=t("shareMNative");
+  nBtn.textContent=t("shareMNative")||"📤 Share";
   nBtn.style.display=navigator.share?"":"none";
-
   openModal("shareModal");
 }
 
+/* Opens share modal — from game share button */
+function openShareModal(){
+  const achResult=getChallengeResult();
+  const canShare =gameOver||results.length||achResult;
+  if(!canShare){toast(t("tGO"),"err");return;}
+  showShareModal(buildShareText());
+}
+
+/* Share from stats modal — uses viewL + viewM */
+function shareFromStats(){
+  const text=buildShareTextFor(viewL,viewM);
+  if(!text){toast(T[viewL].tGO||"No result","err");return;}
+  showShareModal(text);
+}
+
+
+/* Copy the text currently shown in the share modal preview */
 async function copyToClipboard(){
-  const text=buildShareText();
+  const text=document.getElementById("shareMPreview")?.textContent||buildShareText()||"";
   try{
     await navigator.clipboard.writeText(text);
   }catch{
-    // Fallback: off-screen textarea (not visible)
     const ta=document.createElement("textarea");
     ta.value=text;
     ta.style.cssText="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;";
@@ -1183,14 +1275,12 @@ async function copyToClipboard(){
 }
 
 async function nativeShare(){
+  const text=document.getElementById("shareMPreview")?.textContent||buildShareText()||"";
   try{
-    await navigator.share({title:"TEKAWORD • MY Edu Hub",text:buildShareText()});
+    await navigator.share({title:"TEKAWORD • MY Edu Hub",text});
     toast(t("tShared"),"ok");
   }catch(e){if(e.name!=="AbortError")toast(t("tShareFail"),"err");}
 }
-
-// Keep old name for backward compat (stats modal still calls this)
-const shareResult=openShareModal;
 
 /* ═══════════════════════════════════════════════════════
    PLAYER NAME — one-time entry, stored in localStorage
@@ -1665,6 +1755,9 @@ async function submitGuess(guess){
   results.push(res);
   updateKeys(guess,res);
 
+  // Save state after every guess (Challenge only — survives page reload)
+  saveGameState();
+
   // Clear buf BEFORE renderGrid → next row is empty
   buf="";
   renderGrid();
@@ -1678,14 +1771,14 @@ async function submitGuess(guess){
       gameOver=true;animBounce(rowIdx);
       toast(t("winMsgs")[guesses.length-1]||t("tWon"),"ok",7000);
       recordResult(true);
-      setCooldown();            // ← start 30-min cooldown
+      saveGameState(); // save final state (gameOver=true)
       showPostGame();
       setTimeout(()=>openStats(),1800);
     }else if(lost){
       gameOver=true;
       toast(`${t("tLost")} <strong>${answer.toUpperCase()}</strong>`,"err",9000);
       recordResult(false);
-      setCooldown();            // ← start 30-min cooldown
+      saveGameState(); // save final state (gameOver=true)
       showPostGame();
       setTimeout(()=>openStats(),2200);
     }else{
@@ -1907,8 +2000,16 @@ const closeModal=id=>document.getElementById(id).classList.remove("open");
 window.addEventListener("load",async()=>{
   // ── 0. Init Firebase + preload word lists ────────────
   initFirebase();
-  loadEnValid(); // preload EN validation in background
-  loadBmValid(); // preload BM validation in background
+  loadEnValid();
+  loadBmValid();
+
+  // ── Restore last challenge lang (fixes empty page on reload bug) ──
+  const lastChLang = localStorage.getItem("tw_last_ch_lang");
+  if(lastChLang && (lastChLang==="en"||lastChLang==="ms")){
+    lang = lastChLang;
+    document.getElementById("btnEn").classList.toggle("active",lang==="en");
+    document.getElementById("btnMs").classList.toggle("active",lang==="ms");
+  }
 
   // ── 1. Apply UI text & build components ──────────────
   applyLang();
@@ -1952,9 +2053,11 @@ window.addEventListener("load",async()=>{
   document.getElementById("statsX").addEventListener("click",()=>closeModal("statsModal"));
   document.getElementById("statsOk").addEventListener("click",()=>closeModal("statsModal"));
   document.getElementById("statsModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeModal("statsModal");});
-  document.getElementById("stEn").addEventListener("click",()=>buildStats("en"));
-  document.getElementById("stMs").addEventListener("click",()=>buildStats("ms"));
-  document.getElementById("shareInStats").addEventListener("click",openShareModal);
+  document.getElementById("stEn").addEventListener("click",()=>buildStats("en",viewM));
+  document.getElementById("stMs").addEventListener("click",()=>buildStats(viewL,"challenge"===viewM?"challenge":"practice"));
+  document.getElementById("stModeChallenge").addEventListener("click",()=>buildStats(viewL,"challenge"));
+  document.getElementById("stModePractice").addEventListener("click",()=>buildStats(viewL,"practice"));
+  document.getElementById("shareInStats").addEventListener("click",shareFromStats);
 
   // Share modal
   document.getElementById("shareMX").addEventListener("click",()=>closeModal("shareModal"));
@@ -1973,9 +2076,16 @@ window.addEventListener("load",async()=>{
   document.getElementById("btnPractice").textContent  = t("modePractice");
 
   if(mode==="challenge"&&hasPlayedChallenge()){
+    // Case 1: Challenge already completed today → show achievement
     renderGrid();buildKeyboard();
     showChallengeAchievement();
+  }else if(mode==="challenge"&&loadGameState()){
+    // Case 2: Mid-game state restored → show grid with progress
+    renderGrid();buildKeyboard();paintKeys();
+    if(gameOver) showChallengeAchievement();
+    // else: player can continue where they left off
   }else if(getRemainingMs()===0){
+    // Case 3: Fresh game
     await resetGame();
   }else{
     document.getElementById("newGameBtn").textContent=t("btnNew");
