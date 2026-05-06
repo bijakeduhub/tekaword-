@@ -706,7 +706,7 @@ en:{
   sPl:"Played", sWl:"Win %", sStl:"Streak", sBel:"Best",
   lC:"Correct position 🟦", lP:"Wrong position 🟧", lA:"Not in word ⬛",
   btnNew:"🔄 New Game", btnHelp:"❓ How to Play", btnShare:"📤 Share Result",
-  footer:"MY Edu Hub © TEKAWORD | bijak.live/tekaword",
+  footer:"MY Edu Hub © TEKAWORD | tekaword.bijak.live",
   howTtl:"🎮 How to Play TEKAWORD",
   howI:"Guess the <strong>5-letter</strong> word in <strong>6 tries</strong>. Every guess must be a real word. Press <strong>⏎ ENTER</strong> to submit.",
   howG:"<b class='g'>🟦 Blue</b> — Correct letter, correct position.",
@@ -784,7 +784,7 @@ ms:{
   sPl:"Main", sWl:"Menang", sStl:"Berturut", sBel:"Terbaik",
   lC:"Kedudukan betul 🟦", lP:"Salah kedudukan 🟧", lA:"Tiada dalam perkataan ⬛",
   btnNew:"🔄 Permainan Baru", btnHelp:"❓ Cara Main", btnShare:"📤 Kongsi",
-  footer:"MY Edu Hub © TEKAWORD | bijak.live/tekaword",
+  footer:"MY Edu Hub © TEKAWORD | tekaword.bijak.live",
   howTtl:"🎮 Cara Main TEKAWORD",
   howI:"Teka perkataan <strong>5 huruf</strong> dalam <strong>6 cubaan</strong>. Setiap teka mesti perkataan sah. Tekan <strong>⏎ ENTER</strong> untuk hantar.",
   howG:"<b class='g'>🟦 Biru</b> — Huruf betul & kedudukan tepat.",
@@ -1244,7 +1244,16 @@ function buildShareTextFor(l, m){
     ? dl.sharePersonWon(name,n)
     : dl.sharePersonLost(name);
 
-  return `TEKAWORD 🎓 MY Edu Hub\n${modeLbl} ${score}/${MAX} (${dl.shareLabel})\n\n${grid}\n\n${personal}\n${url}`;
+  // Build highlight line — streak ≥3 and/or win% ≥90%
+  const mStats  = getModeStats(m, l);
+  const streak  = mStats.streak || 0;
+  const winPct  = mStats.played ? Math.round(mStats.wins / mStats.played * 100) : 0;
+  const parts   = [];
+  if(streak  >= 3)   parts.push(`🔥 ${l==="ms"?"Berturut":"Streak"}: ${streak}`);
+  if(winPct  >= 90)  parts.push(`💯 ${l==="ms"?"Menang":"Win"}: ${winPct}%`);
+  const highlights = parts.length ? `\n${parts.join("  |  ")}` : "";
+
+  return `TEKAWORD 🎓 MY Edu Hub\n${modeLbl} ${score}/${MAX} (${dl.shareLabel})\n\n${grid}${highlights}\n\n${personal}\n${url}`;
 }
 
 /* Build share text for current game */
