@@ -883,8 +883,7 @@ function applyLang(){
   document.getElementById("gameSub").textContent =
     mode==="challenge"?t("subChallenge"):t("subPractice");
   // newGameBtn
-  const ngb=document.getElementById("newGameBtn");
-  if(ngb&&!ngb.disabled) ngb.textContent=t("btnNew");
+  updateNewGameBtn();
   document.getElementById("footerTxt").innerHTML    = t("footer");
   document.getElementById("howTtl").textContent     = t("howTtl");
   document.getElementById("howIntro").innerHTML     = t("howI");
@@ -911,6 +910,19 @@ let guesses=[], results=[];
 let gameOver=false, isLoading=false, isChecking=false, isAnimating=false;
 let buf="", keyState={};
 let cdInterval=null;
+let pendingAchTimeout=null; // tracks the 800ms achievement card delay
+
+/* Hide New Game button in Challenge (one per day), show in Practice */
+function updateNewGameBtn(){
+  const btn=document.getElementById("newGameBtn");
+  if(!btn)return;
+  if(mode==="challenge"){
+    btn.style.display="none";
+  }else{
+    btn.style.display="";
+    if(!btn.disabled) btn.textContent=t("btnNew");
+  }
+}
 
 /* ═══════════════════════════════════════════════════════
    COOLDOWN
@@ -1197,12 +1209,21 @@ function buildShareTextFor(l, m){
   const name= getPlayerName();
   let won, score, n, grid;
 
+  // Helper: get saved emoji grid — separate key (most reliable) or inline fallback
+  const getSavedGrid = ()=>{
+    // 1. Separate emoji key (saved at game end)
+    const sep = localStorage.getItem(`tw_emoji_${m}_${l}`)||"";
+    if(sep) return sep;
+    // 2. Live results (if this is the current game still in memory)
+    if(l===lang && m===mode && gameOver && results.length) return buildEmojiGrid();
+    return "";
+  };
+
   if(m==="challenge"){
     const achR = getChResultFor(l);
     if(achR){
       won=achR.won; score=achR.score; n=achR.guesses;
-      // achR.emojiGrid might be empty for old saves — rebuild if live game matches
-      grid=achR.emojiGrid||(l===lang&&gameOver&&results.length?buildEmojiGrid():"");
+      grid=achR.emojiGrid||getSavedGrid();
     }else if(l===lang&&gameOver&&results.length){
       won=guesses[guesses.length-1]===answer;
       score=won?guesses.length:"X"; n=guesses.length; grid=buildEmojiGrid();
@@ -1212,8 +1233,7 @@ function buildShareTextFor(l, m){
     const lg=pr.lastGame;
     if(!lg) return null;
     won=lg.won; score=won?lg.guesses:"X"; n=lg.guesses;
-    // Use saved emojiGrid; if missing & this is live game, build from results
-    grid=lg.emojiGrid||(l===lang&&gameOver&&results.length?buildEmojiGrid():"");
+    grid=lg.emojiGrid||getSavedGrid();
   }
 
   const modeLbl = m==="challenge"
@@ -1834,12 +1854,26 @@ function hideChallengeAchievement(){
 }
 
 function showPostGame(){
+  // Save emoji grid separately — reliable cross-session retrieval
+  const emojiKey = `tw_emoji_${mode}_${lang}`;
+  try{ localStorage.setItem(emojiKey, buildEmojiGrid()); }catch{}
+
   if(mode==="challenge"){
     markChallengePlayedToday();
-    setTimeout(()=>showChallengeAchievement(), 800);
+    // Capture lang NOW — so timeout always shows the right lang's achievement
+    const capturedLang = lang;
+    pendingAchTimeout = setTimeout(()=>{
+      pendingAchTimeout = null;
+      // Only show if lang hasn't changed since game ended
+      if(lang === capturedLang) showChallengeAchievement();
+    }, 800);
   }else{
     document.getElementById("shareRow").classList.add("show");
   }
+}
+
+function cancelPendingAch(){
+  if(pendingAchTimeout){ clearTimeout(pendingAchTimeout); pendingAchTimeout=null; }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1916,6 +1950,7 @@ async function fetchAnswer(){
    GAME FLOW
 ═══════════════════════════════════════════════════════ */
 async function resetGame(){
+  cancelPendingAch();
   // Challenge — show achievement if already played today
   if(mode==="challenge"&&hasPlayedChallenge()){
     hideChallengeAchievement(); // reset first
@@ -1934,7 +1969,9 @@ async function resetGame(){
 }
 
 async function switchMode(m){
+  cancelPendingAch();
   mode=m;
+  updateNewGameBtn();
   document.getElementById("btnChallenge").classList.toggle("active",m==="challenge");
   document.getElementById("btnPractice").classList.toggle("active",m==="practice");
   document.getElementById("btnPractice").classList.toggle("practice",m==="practice");
@@ -1962,10 +1999,11 @@ async function switchMode(m){
 }
 
 async function switchLang(l){
+  cancelPendingAch();
   lang=l;
   document.getElementById("btnEn").classList.toggle("active",l==="en");
   document.getElementById("btnMs").classList.toggle("active",l==="ms");
-  applyLang();refreshMini();
+  applyLang();updateNewGameBtn();refreshMini();
 
   gameOver=false;guesses=[];results=[];
   buf="";keyState={};isAnimating=false;answer="";
@@ -2008,6 +2046,7 @@ window.addEventListener("load",async()=>{
   initFirebase();
   loadEnValid();
   loadBmValid();
+  updateNewGameBtn(); // hide New Game in Challenge mode on load
 
   // ── Restore last challenge lang (fixes empty page on reload bug) ──
   const lastChLang = localStorage.getItem("tw_last_ch_lang");
