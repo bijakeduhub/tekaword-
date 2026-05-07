@@ -206,6 +206,25 @@ button{font-family:inherit;cursor:pointer;}
 }
 .btn-practice:active{transform:translateY(2px);box-shadow:0 2px 0 #155724;}
 
+/* ── SHARE MODAL — image + 2 buttons ───────────────────── */
+.share-img-wrap{
+  width:100%;display:flex;justify-content:center;
+  margin-bottom:16px;
+}
+#shareCanvas{
+  width:280px;height:280px;
+  border-radius:14px;
+  box-shadow:0 6px 20px rgba(0,0,0,.25);
+  background:#1B2B6B;
+}
+.share-btn-row{
+  display:flex;gap:10px;
+}
+.share-btn-row .m-btn{
+  flex:1;padding:14px 12px;font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+
 /* ── BUTTONS ────────────────────────────────────────────── */
 .btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
 .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-b));
@@ -669,12 +688,15 @@ button{font-family:inherit;cursor:pointer;}
       <button class="m-close" id="shareMX">✕</button>
     </div>
     <div class="m-body">
-      <!-- Full share text preview — readable, copyable visually -->
-      <div class="share-preview-box" id="shareMPreview"></div>
-      <div class="m-btn-row">
-        <button class="m-btn gold"    id="shareMCopy">📋 Copy</button>
-        <button class="m-btn primary" id="shareMNative" style="display:none">📤 Share</button>
-        <button class="m-btn" style="background:#f0f2ff;color:var(--txt);" id="shareMClose">Close</button>
+      <!-- Image preview (small, no scroll needed) -->
+      <div class="share-img-wrap">
+        <canvas id="shareCanvas" width="800" height="800"></canvas>
+      </div>
+
+      <!-- Two buttons side-by-side -->
+      <div class="share-btn-row">
+        <button class="m-btn gold"    id="shareImgBtn">📷</button>
+        <button class="m-btn primary" id="shareTxtBtn">💬</button>
       </div>
     </div>
   </div>
@@ -756,8 +778,8 @@ en:{
   renameToast:n=>`Name updated to ${n} ✅`,
   // Share modal
   shareMTtl:"📤 Share Your Result",
-  shareMCopy:"📋 Copy to Clipboard",
-  shareMNative:"📤 Share via App",
+  shareImgLbl:"📷 Share Image",
+  shareTxtLbl:"💬 Share Text",
   shareMClose:"Close",
   winMsgs:["🏆 GENIUS! 1 try!","🎉 Magnificent!","🎉 Impressive!","🎉 Great!","✅ Well done!","😅 Phew!"],
   tWon:"🎉 YOU WIN!", tLost:"Game Over! Answer:",
@@ -833,8 +855,8 @@ ms:{
   renameToast:n=>`Nama ditukar kepada ${n} ✅`,
   // Share modal
   shareMTtl:"📤 Kongsi Keputusan",
-  shareMCopy:"📋 Salin ke Papan Klip",
-  shareMNative:"📤 Kongsi melalui Apl",
+  shareImgLbl:"📷 Kongsi Imej",
+  shareTxtLbl:"💬 Kongsi Teks",
   shareMClose:"Tutup",
   winMsgs:["🏆 GENIUS! 1 cubaan!","🎉 Luar biasa!","🎉 Hebat!","🎉 Bagus!","✅ Syabas!","😅 Hampir!"],
   tWon:"🎉 MENANG!", tLost:"TAMAT! Jawapan:",
@@ -1190,7 +1212,7 @@ function shareFromStats(){
     toast(T[viewL].tGO||"No result to share","err");return;
   }
   const text=buildShareTextFor(viewL,viewM);
-  showShareModal(text);
+  showShareModal(text, viewL, viewM);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1263,56 +1285,218 @@ function buildShareText(){
   return buildShareTextFor(lang,mode);
 }
 
-/* Show share modal with given text */
-function showShareModal(text){
-  if(!text){toast(t("tGO"),"err");return;}
-  document.getElementById("shareMTtl").textContent    = t("shareMTtl")||"📤 Share Result";
-  document.getElementById("shareMPreview").textContent = text;
-  document.getElementById("shareMCopy").textContent   = t("shareMCopy")||"📋 Copy";
-  document.getElementById("shareMClose").textContent  = t("shareMClose")||"Close";
-  const nBtn=document.getElementById("shareMNative");
-  nBtn.textContent=t("shareMNative")||"📤 Share";
-  nBtn.style.display=navigator.share?"":"none";
+/* ═══════════════════════════════════════════════════════
+   SHARE IMAGE GENERATION (canvas)
+═══════════════════════════════════════════════════════ */
+const SHARE_GRADIENTS = [
+  ["#0D47A1","#E65100"], ["#1B5E20","#0D47A1"], ["#4A148C","#FF6F00"],
+  ["#0D47A1","#C9963A"], ["#1A237E","#B71C1C"], ["#004D40","#FF8F00"],
+  ["#311B92","#1565C0"], ["#263238","#FF6F00"], ["#37474F","#C2185B"],
+  ["#1B2B6B","#E8B84B"]
+];
+const SHARE_EMOJIS = ["🎯","🔥","✨","💡","🧠","🏆","⭐","🎓","💪","👀","🚀","💯","⚡"];
+const SHARE_SENTENCES = {
+  en:{
+    won:[n=>`Crushed it in ${n}!`,n=>`Nailed it in just ${n}!`,n=>`Solved in ${n} — big brain!`,
+         n=>`Got it in ${n}!`,n=>`${n} tries. Easy!`,n=>`Boom! ${n}/6 done!`],
+    lost:[`Better luck tomorrow!`,`So close!`,`Almost had it!`,`Tomorrow is a new word!`]
+  },
+  ms:{
+    won:[n=>`Berjaya dalam ${n} cubaan!`,n=>`${n} cubaan je! Hebat!`,n=>`Otak power! ${n} cubaan!`,
+         n=>`${n}/6 ditakluk!`,n=>`${n} cubaan, juara!`,n=>`Mantap! ${n} cubaan sahaja!`],
+    lost:[`Cuba lagi esok!`,`Hampir-hampir!`,`Esok lagi!`,`Tak apa, cuba lagi!`]
+  }
+};
+function _rand(a){return a[Math.floor(Math.random()*a.length)];}
+
+/* Generate share image on canvas — uses live results or saved emojiGrid */
+function generateShareImage(l, m){
+  const canvas = document.getElementById("shareCanvas");
+  if(!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const W=canvas.width, H=canvas.height;
+
+  // Resolve game data (same logic as buildShareTextFor)
+  let won, score, n, gridStr, name=getPlayerName()||"Player";
+  if(m==="challenge"){
+    const achR=getChResultFor(l);
+    if(achR){ won=achR.won; score=achR.score; n=achR.guesses; gridStr=achR.emojiGrid; }
+    else if(l===lang&&gameOver&&results.length){
+      won=guesses[guesses.length-1]===answer;
+      score=won?guesses.length:"X"; n=guesses.length; gridStr=buildEmojiGrid();
+    }else return;
+  }else{
+    const lg=getModeStats("practice",l).lastGame;
+    if(!lg) return;
+    won=lg.won; score=won?lg.guesses:"X"; n=lg.guesses;
+    gridStr=lg.emojiGrid||localStorage.getItem(`tw_emoji_${m}_${l}`)||"";
+  }
+  if(!gridStr) gridStr="🟦🟦🟦🟦🟦";
+  const tileRows = gridStr.split("\n").map(row=>{
+    const cells=[...row]; // emoji-aware split
+    return cells.map(c=>c==="🟦"?"correct":c==="🟧"?"present":"absent");
+  });
+
+  // 1. Random gradient background
+  const [c1,c2]=_rand(SHARE_GRADIENTS);
+  const grad=ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0,c1); grad.addColorStop(1,c2);
+  ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+
+  // 2. Emoji scatter
+  ctx.globalAlpha=0.18;
+  for(let i=0;i<18;i++){
+    const e=_rand(SHARE_EMOJIS);
+    const x=Math.random()*W, y=Math.random()*H;
+    const size=40+Math.random()*55;
+    ctx.font=`${size}px sans-serif`;
+    ctx.fillText(e,x,y);
+  }
+  ctx.globalAlpha=1;
+
+  // 3. Branding
+  ctx.fillStyle="rgba(255,255,255,.95)";
+  ctx.font="900 56px Poppins,sans-serif";
+  ctx.textAlign="center";
+  ctx.fillText("🎓 TEKAWORD",W/2,100);
+  ctx.fillStyle="rgba(255,255,255,.65)";
+  ctx.font="700 22px Nunito,sans-serif";
+  ctx.fillText("MY Edu Hub",W/2,134);
+
+  // 4. Mode label
+  const modeLbl = m==="challenge"
+    ? (l==="ms"?`🏆 Cabaran #${dayNumber()}`:`🏆 Challenge #${dayNumber()}`)
+    : (l==="ms"?"🎯 Latihan":"🎯 Practice");
+  ctx.fillStyle="rgba(255,255,255,.9)";
+  ctx.font="800 28px Nunito,sans-serif";
+  ctx.fillText(modeLbl,W/2,184);
+
+  // 5. Tiles (HERO) — size scales with row count so 6 rows still fit comfortably
+  const rowCount = tileRows.length;
+  const tSize = rowCount <= 3 ? 90 : rowCount <= 4 ? 80 : rowCount <= 5 ? 72 : 64;
+  const tGap = rowCount <= 4 ? 10 : 8;
+  const rGap = rowCount <= 4 ? 10 : 8;
+  const gridW = tSize*5+tGap*4;
+  const sx=(W-gridW)/2, sy=240;
+  ctx.shadowColor="rgba(0,0,0,.3)"; ctx.shadowBlur=8; ctx.shadowOffsetY=4;
+  for(let r=0;r<tileRows.length;r++){
+    for(let c=0;c<5;c++){
+      const x=sx+c*(tSize+tGap), y=sy+r*(tSize+rGap);
+      const v=tileRows[r][c];
+      ctx.fillStyle = v==="correct"?"#1565C0":v==="present"?"#E65100":"#37474F";
+      _roundRect(ctx,x,y,tSize,tSize,Math.round(tSize*0.16)); ctx.fill();
+    }
+  }
+  ctx.shadowColor="transparent"; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+
+  // 6. Trophy + score badge
+  const scoreY = sy + tileRows.length*(tSize+rGap) + 50;
+  ctx.fillStyle = won?"rgba(232,184,75,.95)":"rgba(229,57,53,.9)";
+  ctx.beginPath(); ctx.arc(W/2,scoreY+40,55,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="white";
+  ctx.font="900 42px Poppins,sans-serif";
+  ctx.fillText(won?"🏆":"💪",W/2-45,scoreY+55);
+  ctx.font="900 40px Poppins,sans-serif";
+  ctx.fillText(`${score}/${MAX}`,W/2+30,scoreY+55);
+
+  // 7. Personalized sentence (random)
+  const sList = SHARE_SENTENCES[l][won?"won":"lost"];
+  const personal = won ? _rand(sList)(n) : _rand(sList);
+  ctx.fillStyle="rgba(255,255,255,.95)";
+  ctx.font="italic 800 28px Nunito,sans-serif";
+  // Truncate name if too long for layout
+  const nm = name.length>15?name.slice(0,15)+"…":name;
+  ctx.fillText(`${nm} — ${personal}`,W/2,scoreY+135);
+
+  // 8. URL
+  ctx.fillStyle="rgba(255,255,255,.7)";
+  ctx.font="800 24px Nunito,sans-serif";
+  ctx.fillText("tekaword.bijak.live",W/2,H-40);
+}
+
+function _roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+/* Show share modal — generates image + sets up handlers */
+let _shareCtx = { lang: null, mode: null, text: "" };
+
+/* Entry point from game share button (uses current game state) */
+function openShareModal(){
+  const achResult = getChallengeResult();
+  const canShare  = gameOver||results.length||achResult;
+  if(!canShare){toast(t("tGO"),"err");return;}
+  const text=buildShareText();
+  showShareModal(text, lang, mode);
+}
+
+function showShareModal(text, l, m){
+  if(!text){ toast(t("tGO"),"err"); return; }
+  _shareCtx = { lang: l||lang, mode: m||mode, text };
+
+  document.getElementById("shareMTtl").textContent = t("shareMTtl")||"📤 Share Result";
+  document.getElementById("shareImgBtn").textContent = t("shareImgLbl")||"📷 Share Image";
+  document.getElementById("shareTxtBtn").textContent = t("shareTxtLbl")||"💬 Share Text";
+
+  generateShareImage(_shareCtx.lang, _shareCtx.mode);
   openModal("shareModal");
 }
 
-/* Opens share modal — from game share button */
-function openShareModal(){
-  const achResult=getChallengeResult();
-  const canShare =gameOver||results.length||achResult;
-  if(!canShare){toast(t("tGO"),"err");return;}
-  showShareModal(buildShareText());
+/* Share IMAGE — uses Web Share API with file */
+async function shareAsImage(){
+  const canvas = document.getElementById("shareCanvas");
+  canvas.toBlob(async (blob)=>{
+    if(!blob){ toast(t("tShareFail"),"err"); return; }
+    const file = new File([blob],"tekaword.png",{type:"image/png"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({
+          files:[file],
+          title:"TEKAWORD",
+          text:"TEKAWORD • tekaword.bijak.live"
+        });
+        toast(t("tShared"),"ok");
+      }catch(e){ if(e.name!=="AbortError") toast(t("tShareFail"),"err"); }
+    }else{
+      // Fallback — download image
+      const link=document.createElement("a");
+      link.download=`tekaword-${Date.now()}.png`;
+      link.href=canvas.toDataURL("image/png");
+      link.click();
+      toast(lang==="ms"?"💾 Imej dimuat turun":"💾 Image downloaded","ok");
+    }
+  },"image/png");
 }
 
-/* Share from stats modal — uses viewL + viewM */
-function shareFromStats(){
-  const text=buildShareTextFor(viewL,viewM);
-  if(!text){toast(T[viewL].tGO||"No result","err");return;}
-  showShareModal(text);
-}
-
-
-/* Copy the text currently shown in the share modal preview */
-async function copyToClipboard(){
-  const text=document.getElementById("shareMPreview")?.textContent||buildShareText()||"";
+/* Share TEXT — copy to clipboard or native text share */
+async function shareAsText(){
+  const text = _shareCtx.text || buildShareText() || "";
+  if(navigator.share){
+    try{
+      await navigator.share({title:"TEKAWORD",text});
+      toast(t("tShared"),"ok"); return;
+    }catch(e){ if(e.name==="AbortError") return; }
+  }
+  // Fallback — clipboard
   try{
     await navigator.clipboard.writeText(text);
   }catch{
     const ta=document.createElement("textarea");
     ta.value=text;
-    ta.style.cssText="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;";
-    document.body.appendChild(ta);ta.select();
-    document.execCommand("copy");document.body.removeChild(ta);
+    ta.style.cssText="position:fixed;left:-9999px;top:-9999px;";
+    document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); document.body.removeChild(ta);
   }
   toast(t("tCopied"),"ok",3500);
-}
-
-async function nativeShare(){
-  const text=document.getElementById("shareMPreview")?.textContent||buildShareText()||"";
-  try{
-    await navigator.share({title:"TEKAWORD • MY Edu Hub",text});
-    toast(t("tShared"),"ok");
-  }catch(e){if(e.name!=="AbortError")toast(t("tShareFail"),"err");}
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2115,9 +2299,8 @@ window.addEventListener("load",async()=>{
 
   // Share modal
   document.getElementById("shareMX").addEventListener("click",()=>closeModal("shareModal"));
-  document.getElementById("shareMClose").addEventListener("click",()=>closeModal("shareModal"));
-  document.getElementById("shareMCopy").addEventListener("click",copyToClipboard);
-  document.getElementById("shareMNative").addEventListener("click",nativeShare);
+  document.getElementById("shareImgBtn").addEventListener("click",shareAsImage);
+  document.getElementById("shareTxtBtn").addEventListener("click",shareAsText);
   document.getElementById("shareModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeModal("shareModal");});
 
   // ── 4. Input — always use custom keyboard; also support physical keys ──
